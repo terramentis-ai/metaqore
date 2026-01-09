@@ -135,7 +135,12 @@ class MockLLMClient:
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.register_scenario(
-            MockLLMScenario(name=name, keywords=tuple(keywords or ()), template=template, metadata=metadata or {})
+            MockLLMScenario(
+                name=name,
+                keywords=tuple(keywords or ()),
+                template=template,
+                metadata=metadata or {},
+            )
         )
 
     def register_handler(
@@ -236,7 +241,9 @@ class MockLLMClient:
                 return scenario
         return None
 
-    def _render_content(self, scenario: Optional[MockLLMScenario], context: MockPromptContext) -> str:
+    def _render_content(
+        self, scenario: Optional[MockLLMScenario], context: MockPromptContext
+    ) -> str:
         if scenario:
             if scenario.handler:
                 return scenario.handler(context)
@@ -324,7 +331,9 @@ class MockLLMClient:
         state["call_count"] += 1
         return state["call_count"]
 
-    def _should_trigger_failure(self, scenario: Optional[MockLLMScenario], call_count: Optional[int]) -> bool:
+    def _should_trigger_failure(
+        self, scenario: Optional[MockLLMScenario], call_count: Optional[int]
+    ) -> bool:
         if not scenario or not scenario.failure_mode:
             return False
         if scenario.inject_after_uses > 0:
@@ -382,7 +391,9 @@ class StatefulConversationHandler:
             if len(self.memory) > self.memory_limit:
                 self.memory.pop(0)
         self.confidence = max(0.05, self.confidence - self.decay)
-        memory_lines = "\n".join(f"- {item}" for item in self.memory) if self.memory else "- (empty)"
+        memory_lines = (
+            "\n".join(f"- {item}" for item in self.memory) if self.memory else "- (empty)"
+        )
         return dedent(
             f"""
             ### Stateful Conversation ({self.name})

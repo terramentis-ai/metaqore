@@ -46,7 +46,13 @@ class FakeStateManager:
 
 
 def _make_artifact(project: Project, *, version: int = 1, created_by: str = "agent") -> Artifact:
-    return Artifact(project_id=project.id, artifact_type="spec", data={"v": version}, version=version, created_by=created_by)
+    return Artifact(
+        project_id=project.id,
+        artifact_type="spec",
+        data={"v": version},
+        version=version,
+        created_by=created_by,
+    )
 
 
 @pytest.fixture()
@@ -88,7 +94,9 @@ def test_declare_artifact_blocks_version_conflict(psmp_engine: PSMPEngine):
 
 def test_parallel_creation_triggers_conflict(psmp_engine: PSMPEngine):
     project = psmp_engine.state_manager.project
-    psmp_engine.state_manager.save_artifact(_make_artifact(project, version=1, created_by="agent-a"))
+    psmp_engine.state_manager.save_artifact(
+        _make_artifact(project, version=1, created_by="agent-a")
+    )
 
     artifact = _make_artifact(project, version=2, created_by="agent-b")
 
@@ -171,7 +179,9 @@ def test_get_blocking_report_lists_blocked_artifacts(psmp_engine: PSMPEngine):
 
 
 def test_resolve_conflict_marks_and_persists(psmp_engine: PSMPEngine):
-    conflict = Conflict(artifact_id="x", project_id=psmp_engine.state_manager.project.id, description="Needs review")
+    conflict = Conflict(
+        artifact_id="x", project_id=psmp_engine.state_manager.project.id, description="Needs review"
+    )
     psmp_engine.state_manager.conflicts[conflict.id] = conflict
 
     resolved = psmp_engine.resolve_conflict(conflict, conflict.resolution_strategy)

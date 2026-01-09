@@ -41,7 +41,9 @@ def test_classify_task_uses_priority_hints() -> None:
     )
     assert critical_security == TaskSensitivity.CRITICAL
 
-    validator = gateway.classify_task(agent_name="CodeValidator", task_type="review", has_sensitive_data=False)
+    validator = gateway.classify_task(
+        agent_name="CodeValidator", task_type="review", has_sensitive_data=False
+    )
     assert validator == TaskSensitivity.INTERNAL
 
     planner = gateway.classify_task(agent_name="PlannerAgent", task_type="governance plan")

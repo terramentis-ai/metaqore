@@ -114,7 +114,9 @@ class ChainingOrchestrator:
             updates={"hmcp_validation": validation_report.to_dict()},
         )
 
-        final_state = SpecialistLifecycle.ACTIVE if validation_report.passed else SpecialistLifecycle.BLOCKED
+        final_state = (
+            SpecialistLifecycle.ACTIVE if validation_report.passed else SpecialistLifecycle.BLOCKED
+        )
         reason = "Validation gate passed" if validation_report.passed else "Validation gate failed"
         specialist = self._psmp.advance_lifecycle(
             specialist,
@@ -122,7 +124,9 @@ class ChainingOrchestrator:
             actor=created_by,
             reason=reason,
         )
-        return ChainingOutcome(specialist=specialist, training=training_outcome, validation=validation_report)
+        return ChainingOutcome(
+            specialist=specialist, training=training_outcome, validation=validation_report
+        )
 
 
 __all__ = ["ChainingOrchestrator", "ChainingOutcome"]

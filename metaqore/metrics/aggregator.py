@@ -210,4 +210,10 @@ def get_metrics_aggregator() -> MetricsAggregator:
     return _aggregator
 
 
-__all__ = ["MetricsAggregator", "MetricCounter", "MetricGauge", "MetricHistogram", "get_metrics_aggregator"]
+__all__ = [
+    "MetricsAggregator",
+    "MetricCounter",
+    "MetricGauge",
+    "MetricHistogram",
+    "get_metrics_aggregator",
+]

@@ -174,7 +174,11 @@ class SQLiteBackend(StorageBackend):
 
     def list_artifacts(self, project_id: str) -> List[Artifact]:
         with Session(self.engine) as session:
-            stmt = select(ArtifactTable).where(ArtifactTable.project_id == project_id).order_by(ArtifactTable.version)
+            stmt = (
+                select(ArtifactTable)
+                .where(ArtifactTable.project_id == project_id)
+                .order_by(ArtifactTable.version)
+            )
             rows = session.execute(stmt).scalars().all()
             return [self._deserialize_artifact(row.payload) for row in rows]
 
@@ -221,7 +225,11 @@ class SQLiteBackend(StorageBackend):
 
     def list_tasks(self, project_id: str) -> List[Task]:
         with Session(self.engine) as session:
-            stmt = select(TaskTable).where(TaskTable.project_id == project_id).order_by(TaskTable.created_at)
+            stmt = (
+                select(TaskTable)
+                .where(TaskTable.project_id == project_id)
+                .order_by(TaskTable.created_at)
+            )
             rows = session.execute(stmt).scalars().all()
             return [Task.model_validate(row.payload) for row in rows]
 
@@ -324,7 +332,11 @@ class SQLiteBackend(StorageBackend):
 
     def list_checkpoints(self, project_id: str) -> List[Checkpoint]:
         with Session(self.engine) as session:
-            stmt = select(CheckpointTable).where(CheckpointTable.project_id == project_id).order_by(CheckpointTable.created_at)
+            stmt = (
+                select(CheckpointTable)
+                .where(CheckpointTable.project_id == project_id)
+                .order_by(CheckpointTable.created_at)
+            )
             rows = session.execute(stmt).scalars().all()
             payloads = [
                 {

@@ -40,10 +40,10 @@ class StreamResponse(ResponseMetadata):
 async def websocket_endpoint(websocket: WebSocket, project_id: str | None = None) -> None:
     """
     WebSocket endpoint for real-time event streaming.
-    
+
     **Query Parameters:**
     - `project_id` (optional): Filter events to specific project
-    
+
     **Subscribe Message (client → server):**
     ```json
     {
@@ -52,7 +52,7 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str | None = None
       "project_ids": ["proj_abc123"]
     }
     ```
-    
+
     **Event Message (server → client):**
     ```json
     {
@@ -102,13 +102,13 @@ async def websocket_endpoint(websocket: WebSocket, project_id: str | None = None
 async def get_metrics() -> Response:
     """
     Return Prometheus-formatted metrics.
-    
+
     Includes:
     - Event counts by type and severity
     - API latency histograms (p50, p99, p999)
     - Mock LLM metadata (latencies, scenarios)
     - Active WebSocket connection count
-    
+
     **Response:** Plain text, Prometheus format
     """
     manager = get_ws_manager()
@@ -127,7 +127,7 @@ async def get_metrics() -> Response:
 async def get_metrics_json(request: Request) -> Dict:
     """
     Return metrics as structured JSON.
-    
+
     **Response (200):**
     ```json
     {

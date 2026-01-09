@@ -40,7 +40,9 @@ def test_blocking_report_returns_empty_sets_for_new_project(tmp_path) -> None:
 
 def test_blocking_report_missing_project_returns_404(tmp_path) -> None:
     client = _build_test_client(tmp_path)
-    response = client.get("/api/v1/governance/blocking-report", params={"project_id": "proj_missing"})
+    response = client.get(
+        "/api/v1/governance/blocking-report", params={"project_id": "proj_missing"}
+    )
     assert response.status_code == 404
     assert response.json()["detail"] == "Project not found"
 
@@ -77,7 +79,9 @@ def test_conflict_listing_supports_filters(tmp_path) -> None:
             artifact_id=f"art_{idx}",
             description=f"Conflict {idx}",
             severity=severity,
-            conflict_type="parallel_creation" if severity is ConflictSeverity.HIGH else "version_mismatch",
+            conflict_type=(
+                "parallel_creation" if severity is ConflictSeverity.HIGH else "version_mismatch"
+            ),
         )
         if severity is ConflictSeverity.LOW:
             conflict.mark_resolved(ResolutionStrategy.RETRY)

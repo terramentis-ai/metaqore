@@ -43,8 +43,14 @@ def generate_prometheus_metrics() -> str:
         lines.append(f"metaqore_{key}_count{tags} {count}")
 
         for percentile in [50, 99, 99.9]:
-            p_key = f"p{int(percentile * 10)}" if percentile != int(percentile) else f"p{int(percentile)}"
-            p_value = histogram.get(f"p{int(percentile) if percentile == int(percentile) else percentile}", 0)
+            p_key = (
+                f"p{int(percentile * 10)}"
+                if percentile != int(percentile)
+                else f"p{int(percentile)}"
+            )
+            p_value = histogram.get(
+                f"p{int(percentile) if percentile == int(percentile) else percentile}", 0
+            )
             if p_value is not None:
                 lines.append(f"metaqore_{key}_{p_key}{tags} {p_value}")
 

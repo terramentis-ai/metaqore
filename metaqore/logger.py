@@ -38,7 +38,9 @@ def configure_logging(level: str | None = None) -> None:
         ``METAQORE_LOG_LEVEL`` or ``INFO`` if not provided.
     """
 
-    logging.basicConfig(level=getattr(logging, (level or _DEFAULT_LOG_LEVEL), logging.INFO), format=_LOG_FORMAT)
+    logging.basicConfig(
+        level=getattr(logging, (level or _DEFAULT_LOG_LEVEL), logging.INFO), format=_LOG_FORMAT
+    )
     logging.getLogger().addFilter(_ContextFilter())
 
 
@@ -51,7 +53,9 @@ def get_logger(name: str) -> logging.Logger:
     return logger
 
 
-def log_with_context(logger: logging.Logger, level: int, message: str, **context: Dict[str, Any]) -> None:
+def log_with_context(
+    logger: logging.Logger, level: int, message: str, **context: Dict[str, Any]
+) -> None:
     """Helper to emit a structured log message with additional context fields."""
 
     extra = {"project_id": context.get("project_id", "-"), "agent": context.get("agent", "-")}

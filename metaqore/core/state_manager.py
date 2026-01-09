@@ -205,7 +205,9 @@ class StateManager:
 
         restored = self.get_project(project_id)
         if restored is None:
-            raise RuntimeError(f"Failed to restore project {project_id} from checkpoint {checkpoint_id}")
+            raise RuntimeError(
+                f"Failed to restore project {project_id} from checkpoint {checkpoint_id}"
+            )
         return restored
 
     def save_checkpoint(self, checkpoint: Checkpoint) -> Checkpoint:
@@ -231,7 +233,9 @@ class StateManager:
 
         artifacts = [_artifact_payload(artifact) for artifact in project.artifacts]
         tasks = [task.model_dump(mode="json") for task in project.tasks]
-        conflicts = [conflict.model_dump(mode="json") for conflict in self.list_conflicts(project.id)]
+        conflicts = [
+            conflict.model_dump(mode="json") for conflict in self.list_conflicts(project.id)
+        ]
         project_payload = project.model_dump(mode="json")
         project_payload["artifacts"] = artifacts
         return {
@@ -286,7 +290,11 @@ class StateManager:
             return
 
         veto = self._secure_gateway.veto_graph_node(f"artifact:{artifact.id}")
-        reason = veto.reason if veto else f"Provider '{provider}' blocked by {self._secure_gateway.policy.name}"
+        reason = (
+            veto.reason
+            if veto
+            else f"Provider '{provider}' blocked by {self._secure_gateway.policy.name}"
+        )
         policy = veto.policy_violated if veto else self._secure_gateway.policy.name
         severity = veto.severity.value if veto else "critical"
         context = VetoExceptionContext(

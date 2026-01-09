@@ -89,10 +89,12 @@ class SpecialistWorkflow:
             notes.append("Requested size within registry limits")
 
         allowed_teachers = set(skill.allowed_teachers)
-        invalid_teachers = [teacher for teacher in proposal.teachers if teacher not in allowed_teachers]
+        invalid_teachers = [
+            teacher for teacher in proposal.teachers if teacher not in allowed_teachers
+        ]
         if invalid_teachers:
             errors.append(
-                    f"Teachers not permitted for skill '{skill.skill_id}': "
+                f"Teachers not permitted for skill '{skill.skill_id}': "
                 + ", ".join(sorted(invalid_teachers))
             )
         else:

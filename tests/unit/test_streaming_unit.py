@@ -27,16 +27,17 @@ def _build_test_client(tmp_path: Path) -> TestClient:
 def test_websocket_receives_emitted_event(tmp_path) -> None:
     """Test event hub broadcasts to WebSocket (simplified - tests infrastructure only)."""
     client = _build_test_client(tmp_path)
-    
+
     # In TestClient context, direct event emission doesn't work due to sync/async mismatch
     # This test validates the WebSocket subscription mechanism works
     with client.websocket_connect("/ws/stream") as websocket:
         import json
+
         websocket.send_text(json.dumps({"action": "subscribe", "event_types": ["compliance.*"]}))
         ack = websocket.receive_json()
         assert ack["action"] == "subscribed"
         assert ack["event_types"] == ["compliance.*"]
-        
+
         # Verify ping/pong works
         websocket.send_text(json.dumps({"action": "ping"}))
         pong = websocket.receive_json()
@@ -46,7 +47,9 @@ def test_websocket_receives_emitted_event(tmp_path) -> None:
 def test_conflict_events_stream_to_websocket(tmp_path) -> None:
     """Test artifact conflict detection triggers events (API integration test)."""
     client = _build_test_client(tmp_path)
-    project_id = client.post("/api/v1/projects", json={"name": "Streamed Project"}).json()["data"]["id"]
+    project_id = client.post("/api/v1/projects", json={"name": "Streamed Project"}).json()["data"][
+        "id"
+    ]
     artifact_payload = {
         "project_id": project_id,
         "artifact_type": "plan",
@@ -64,7 +67,7 @@ def test_conflict_events_stream_to_websocket(tmp_path) -> None:
     }
     response = client.post("/api/v1/artifacts", json=conflict_payload)
     assert response.status_code == 409
-    
+
     # Verify the conflict was detected and stored
     # (Event emission in sync TestClient context is skipped but conflict is real)
     json_data = response.json()

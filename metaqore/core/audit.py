@@ -79,7 +79,9 @@ class ComplianceAuditor:
         try:
             with self.log_file.open("a", encoding="utf-8") as handle:
                 for event in self._buffer:
-                    handle.write(json.dumps(event.to_dict(), default=self._default_serializer) + "\n")
+                    handle.write(
+                        json.dumps(event.to_dict(), default=self._default_serializer) + "\n"
+                    )
             logger.debug("Flushed %s audit events to %s", len(self._buffer), self.log_file)
         finally:
             self._buffer.clear()
@@ -191,11 +193,9 @@ class ComplianceAuditor:
             except ValueError:
                 # Fallback: create custom event type string
                 evt_type = event_type  # type: ignore
-            
+
             event = Event(
-                event_type=evt_type,
-                changes=payload,
-                metadata={"organization": self.organization}
+                event_type=evt_type, changes=payload, metadata={"organization": self.organization}
             )
             get_event_hub().emit(event)
         except Exception:  # pragma: no cover - streaming is best-effort

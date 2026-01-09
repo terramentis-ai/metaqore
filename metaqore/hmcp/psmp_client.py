@@ -31,9 +31,7 @@ class PSMPClient:
         """Declare the specialist artifact through PSMP."""
 
         persisted = self._state_manager.create_artifact(specialist)
-        logger.info(
-            "Registered specialist %s for project %s", persisted.id, persisted.project_id
-        )
+        logger.info("Registered specialist %s for project %s", persisted.id, persisted.project_id)
         return persisted
 
     def advance_lifecycle(

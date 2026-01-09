@@ -147,10 +147,12 @@ class SpecialistModel(Artifact):
         """Record a lifecycle transition for the specialist."""
 
         history = self.metadata.setdefault("lifecycle_history", [])
-        history.append({
-            "state": next_state.value,
-            "changed_at": current_utc().isoformat(),
-        })
+        history.append(
+            {
+                "state": next_state.value,
+                "changed_at": current_utc().isoformat(),
+            }
+        )
         self.lifecycle_state = next_state
 
 
@@ -225,7 +227,9 @@ class BlockingReport(MetaQoreModel):
         blocked_ids: List[str] = []
         for artifact in blocked:
             blocked_ids.append(artifact.id)
-            conflict_set.extend(conflict for conflict in artifact.blocked_by if not conflict.resolved)
+            conflict_set.extend(
+                conflict for conflict in artifact.blocked_by if not conflict.resolved
+            )
         return cls(
             project_id=project_id,
             conflicts=conflict_set,

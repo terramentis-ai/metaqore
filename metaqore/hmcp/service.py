@@ -60,7 +60,9 @@ class HMCPService:
             data=data,
             metadata=metadata,
         )
-        gateway_job_id = self.enqueue_training_job(outcome.specialist) if outcome.activated else None
+        gateway_job_id = (
+            self.enqueue_training_job(outcome.specialist) if outcome.activated else None
+        )
         return outcome, gateway_job_id
 
     def draft_specialist_model(

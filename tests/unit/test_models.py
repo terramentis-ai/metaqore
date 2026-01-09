@@ -70,7 +70,9 @@ def test_blocking_report_collects_unresolved_conflicts() -> None:
         created_by="agent",
         blocked_by=[conflict],
     )
-    clean_artifact = Artifact(project_id=project.id, artifact_type="spec", data={}, created_by="agent")
+    clean_artifact = Artifact(
+        project_id=project.id, artifact_type="spec", data={}, created_by="agent"
+    )
 
     report = BlockingReport.from_artifacts(project.id, [blocked_artifact, clean_artifact])
 
@@ -109,4 +111,7 @@ def test_specialist_model_tracks_lifecycle_transitions() -> None:
     specialist.advance_state(SpecialistLifecycle.MOPD_TRAINING)
 
     assert specialist.lifecycle_state == SpecialistLifecycle.MOPD_TRAINING
-    assert specialist.metadata["lifecycle_history"][0]["state"] == SpecialistLifecycle.MOPD_TRAINING.value
+    assert (
+        specialist.metadata["lifecycle_history"][0]["state"]
+        == SpecialistLifecycle.MOPD_TRAINING.value
+    )

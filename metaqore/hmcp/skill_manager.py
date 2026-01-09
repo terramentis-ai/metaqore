@@ -6,7 +6,12 @@ from dataclasses import dataclass
 from typing import Iterable, List, Optional
 
 from .registry import SkillDefinition, SkillRegistry
-from .workflow import ProposalEvaluation, SpecialistProposal, SpecialistWorkflow, SpecialistWorkflowError
+from .workflow import (
+    ProposalEvaluation,
+    SpecialistProposal,
+    SpecialistWorkflow,
+    SpecialistWorkflowError,
+)
 
 
 @dataclass(frozen=True)

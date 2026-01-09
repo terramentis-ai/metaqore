@@ -50,7 +50,8 @@ class GatewayWorker:
     """Background worker that dequeues jobs and assembles cache-friendly batches."""
 
     DEFAULT_PROFILE_TEMPLATE = (
-        "You are a specialized MetaQore agent. Read the task context carefully and respond with" " actionable steps.\n\n"
+        "You are a specialized MetaQore agent. Read the task context carefully and respond with"
+        " actionable steps.\n\n"
         "{task_context}"
     )
 
@@ -171,11 +172,15 @@ class GatewayWorker:
         return "(unknown)"
 
     def _build_task_context(self, job: GatewayJob, metadata: Dict[str, Any]) -> str:
-        hmcp_meta = metadata.get("hmcp_metadata") if isinstance(metadata.get("hmcp_metadata"), dict) else {}
+        hmcp_meta = (
+            metadata.get("hmcp_metadata") if isinstance(metadata.get("hmcp_metadata"), dict) else {}
+        )
         intent = metadata.get("intent") or hmcp_meta.get("intent") or "specialist_training"
         level_key = job.payload.get("level_key") if isinstance(job.payload, dict) else None
         level_type = job.payload.get("level_type") if isinstance(job.payload, dict) else None
-        parameter_count = job.payload.get("parameter_count") if isinstance(job.payload, dict) else None
+        parameter_count = (
+            job.payload.get("parameter_count") if isinstance(job.payload, dict) else None
+        )
         confidence = job.payload.get("confidence") if isinstance(job.payload, dict) else None
         requested_size = metadata.get("requested_size_mb") or hmcp_meta.get("requested_size_mb")
         summary = metadata.get("summary") or metadata.get("description")

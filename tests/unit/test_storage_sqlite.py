@@ -34,8 +34,12 @@ def test_artifact_version_ordering(backend: SQLiteBackend) -> None:
     project = Project(name="Artifacts")
     backend.save_project(project)
 
-    a1 = Artifact(project_id=project.id, artifact_type="spec", data={}, created_by="agent", version=1)
-    a2 = Artifact(project_id=project.id, artifact_type="spec", data={}, created_by="agent", version=2)
+    a1 = Artifact(
+        project_id=project.id, artifact_type="spec", data={}, created_by="agent", version=1
+    )
+    a2 = Artifact(
+        project_id=project.id, artifact_type="spec", data={}, created_by="agent", version=2
+    )
     backend.save_artifact(a2)
     backend.save_artifact(a1)
 
@@ -48,7 +52,11 @@ def test_task_storage_preserves_order(backend: SQLiteBackend) -> None:
     project = Project(name="Tasks")
     backend.save_project(project)
 
-    older = Task(project_id=project.id, title="older", created_at=datetime.now(timezone.utc) - timedelta(days=1))
+    older = Task(
+        project_id=project.id,
+        title="older",
+        created_at=datetime.now(timezone.utc) - timedelta(days=1),
+    )
     newer = Task(project_id=project.id, title="newer")
     backend.save_task(newer)
     backend.save_task(older)
@@ -75,7 +83,9 @@ def test_conflict_save_and_update(backend: SQLiteBackend) -> None:
 def test_checkpoint_roundtrip(backend: SQLiteBackend) -> None:
     project = Project(name="Checkpoints")
     backend.save_project(project)
-    checkpoint = Checkpoint(project_id=project.id, label="baseline", snapshot={"project": project.model_dump()})
+    checkpoint = Checkpoint(
+        project_id=project.id, label="baseline", snapshot={"project": project.model_dump()}
+    )
 
     backend.save_checkpoint(checkpoint)
     stored = backend.list_checkpoints(project.id)

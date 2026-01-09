@@ -47,9 +47,15 @@ class MetaQoreConfig(BaseSettings):
         default="Authorization",
         description="Header to inspect for API key bearer token.",
     )
-    enable_rate_limit: bool = Field(default=True, description="Enable simple in-memory rate limiting.")
-    rate_limit_per_minute: int = Field(default=120, ge=1, description="Requests allowed per minute per client")
-    rate_limit_burst: int = Field(default=240, ge=1, description="Burst ceiling within the same window")
+    enable_rate_limit: bool = Field(
+        default=True, description="Enable simple in-memory rate limiting."
+    )
+    rate_limit_per_minute: int = Field(
+        default=120, ge=1, description="Requests allowed per minute per client"
+    )
+    rate_limit_burst: int = Field(
+        default=240, ge=1, description="Burst ceiling within the same window"
+    )
     privileged_token: Optional[str] = Field(
         default=None,
         description="Optional shared secret to mark privileged MetaQore clients.",
@@ -72,7 +78,9 @@ class MetaQoreConfig(BaseSettings):
         return policy.name
 
     @classmethod
-    def from_yaml(cls, path: str | Path, *, overrides: Optional[Dict[str, Any]] = None) -> "MetaQoreConfig":
+    def from_yaml(
+        cls, path: str | Path, *, overrides: Optional[Dict[str, Any]] = None
+    ) -> "MetaQoreConfig":
         """Load configuration from a YAML file with optional overrides."""
 
         with Path(path).expanduser().open("r", encoding="utf-8") as fh:

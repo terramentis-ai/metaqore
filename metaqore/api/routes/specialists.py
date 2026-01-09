@@ -87,7 +87,9 @@ async def evaluate_specialist_proposal(
             parameter_count=payload.parameter_count,
         )
     except ValueError as exc:  # pragma: no cover - pydantic should prevent, but guard anyway
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
 
     evaluation = hmcp_service.evaluate_proposal(proposal)
     data = SpecialistEvaluationData(
@@ -123,7 +125,9 @@ async def draft_specialist(
             parameter_count=payload.parameter_count,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
 
     try:
         specialist = hmcp_service.draft_specialist_model(
@@ -134,7 +138,9 @@ async def draft_specialist(
             metadata=payload.metadata,
         )
     except SpecialistWorkflowError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
 
     try:
         persisted = state_manager.create_artifact(specialist)
@@ -168,7 +174,9 @@ async def run_specialist_workflow(
             parameter_count=payload.parameter_count,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
 
     try:
         outcome, gateway_job_id = hmcp_service.run_autonomous_workflow(
@@ -179,7 +187,9 @@ async def run_specialist_workflow(
             metadata=payload.metadata,
         )
     except SpecialistWorkflowError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
     except ConflictDetectedError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 

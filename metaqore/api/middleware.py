@@ -45,7 +45,9 @@ class GovernanceEnforcementMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):  # type: ignore[override]
         request.state.governance_mode = self._config.governance_mode
         response = await call_next(request)
-        response.headers.setdefault("X-MetaQore-Governance-Mode", self._config.governance_mode.value)
+        response.headers.setdefault(
+            "X-MetaQore-Governance-Mode", self._config.governance_mode.value
+        )
         return response
 
 
@@ -77,7 +79,9 @@ class PrivilegedClientMiddleware(BaseHTTPMiddleware):
 class APIKeyAuthMiddleware(BaseHTTPMiddleware):
     """Simple API-key guard for all API routes."""
 
-    def __init__(self, app: ASGIApp, *, api_key: Optional[str], header_name: str = "Authorization") -> None:
+    def __init__(
+        self, app: ASGIApp, *, api_key: Optional[str], header_name: str = "Authorization"
+    ) -> None:
         super().__init__(app)
         self._api_key = api_key
         self._header_name = header_name
@@ -148,7 +152,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
-def register_middlewares(app: FastAPI, config: MetaQoreConfig, *, privileged_token: Optional[str] = None) -> None:
+def register_middlewares(
+    app: FastAPI, config: MetaQoreConfig, *, privileged_token: Optional[str] = None
+) -> None:
     """Register MetaQore middleware stack on the supplied FastAPI app."""
 
     app.add_middleware(GZipMiddleware, minimum_size=512)

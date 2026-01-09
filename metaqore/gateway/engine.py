@@ -31,7 +31,9 @@ class PromptAssemblyEngine:
     def __init__(self) -> None:
         self._profiles: Dict[str, PromptProfile] = {}
 
-    def register_profile(self, agent_name: str, template: str, *, metadata: Optional[Dict[str, object]] = None) -> None:
+    def register_profile(
+        self, agent_name: str, template: str, *, metadata: Optional[Dict[str, object]] = None
+    ) -> None:
         profile = PromptProfile(name=agent_name, template=template, metadata=metadata or {})
         self._profiles[agent_name] = profile
 

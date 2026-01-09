@@ -82,7 +82,10 @@ class WebSocketConnectionManager:
 
     def _should_deliver(self, subscription: Subscription, event: Event) -> bool:
         if subscription.event_types:
-            if not any(self._matches_pattern(pattern, event.event_type.value) for pattern in subscription.event_types):
+            if not any(
+                self._matches_pattern(pattern, event.event_type.value)
+                for pattern in subscription.event_types
+            ):
                 return False
         if subscription.project_ids and event.project_id not in subscription.project_ids:
             return False

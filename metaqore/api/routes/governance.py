@@ -95,7 +95,9 @@ async def resolve_conflict(
     if conflict is None:
         raise HTTPException(status_code=404, detail="Conflict not found")
 
-    resolved = psmp_engine.resolve_conflict(conflict, payload.strategy or conflict.resolution_strategy)
+    resolved = psmp_engine.resolve_conflict(
+        conflict, payload.strategy or conflict.resolution_strategy
+    )
     return ConflictResponse(data=resolved, metadata=build_response_metadata(request))
 
 
@@ -151,9 +153,11 @@ async def export_compliance_report(
 
     if export_format.lower() == "csv":
         csv_payload = _serialize_events_to_csv(events)
-        filename = f"compliance_{resolved_org}_{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.csv"
+        filename = (
+            f"compliance_{resolved_org}_{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.csv"
+        )
         response = PlainTextResponse(csv_payload, media_type="text/csv")
-        response.headers["Content-Disposition"] = f"attachment; filename=\"{filename}\""
+        response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
         response.headers["X-Request-ID"] = metadata.request_id
         return response
 

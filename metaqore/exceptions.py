@@ -53,10 +53,13 @@ class VetoAppliedError(MetaQoreError):
     """Raised when SecureGateway vetoes an operation and execution must stop."""
 
     def __init__(self, context: VetoExceptionContext) -> None:
-        super().__init__(context.reason, metadata={
-            "agent_name": context.agent_name,
-            "task_type": context.task_type,
-            "policy": context.policy,
-            "severity": context.severity,
-        })
+        super().__init__(
+            context.reason,
+            metadata={
+                "agent_name": context.agent_name,
+                "task_type": context.task_type,
+                "policy": context.policy,
+                "severity": context.severity,
+            },
+        )
         self.context = context

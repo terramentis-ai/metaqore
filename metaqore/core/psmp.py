@@ -60,7 +60,10 @@ class PSMPEngine:
             artifact.blocked_by = conflicts
             conflict_ids = ", ".join(conflict.id for conflict in conflicts)
             logger.warning(
-                "Artifact %s blocked by conflicts: %s", artifact.id, conflict_ids, extra={"project_id": artifact.project_id}
+                "Artifact %s blocked by conflicts: %s",
+                artifact.id,
+                conflict_ids,
+                extra={"project_id": artifact.project_id},
             )
             self._emit_conflict_event(artifact.project_id, artifact.id, conflicts)
             raise ConflictDetectedError(
@@ -90,7 +93,12 @@ class PSMPEngine:
     def resolve_conflict(self, conflict: Conflict, strategy: ResolutionStrategy) -> Conflict:
         conflict.mark_resolved(strategy)
         self.state_manager.update_conflict(conflict)
-        logger.info("Resolved conflict %s via %s", conflict.id, strategy.value, extra={"project_id": conflict.project_id})
+        logger.info(
+            "Resolved conflict %s via %s",
+            conflict.id,
+            strategy.value,
+            extra={"project_id": conflict.project_id},
+        )
         return conflict
 
     # ------------------------------------------------------------------
@@ -104,10 +112,14 @@ class PSMPEngine:
 
     def _next_version(self, project_id: str, artifact_type: str) -> int:
         artifacts = self.state_manager.list_artifacts(project_id)
-        versions = [artifact.version for artifact in artifacts if artifact.artifact_type == artifact_type]
+        versions = [
+            artifact.version for artifact in artifacts if artifact.artifact_type == artifact_type
+        ]
         return (max(versions) + 1) if versions else 1
 
-    def _check_version_conflict(self, artifact: Artifact, existing: Sequence[Artifact]) -> List[Conflict]:
+    def _check_version_conflict(
+        self, artifact: Artifact, existing: Sequence[Artifact]
+    ) -> List[Conflict]:
         conflicts: List[Conflict] = []
         relevant = [a for a in existing if a.artifact_type == artifact.artifact_type]
         if not relevant:
@@ -129,9 +141,15 @@ class PSMPEngine:
             )
         return conflicts
 
-    def _check_parallel_agent_conflict(self, artifact: Artifact, existing: Sequence[Artifact]) -> List[Conflict]:
+    def _check_parallel_agent_conflict(
+        self, artifact: Artifact, existing: Sequence[Artifact]
+    ) -> List[Conflict]:
         conflicts: List[Conflict] = []
-        clashes = [a for a in existing if a.artifact_type == artifact.artifact_type and a.created_by != artifact.created_by]
+        clashes = [
+            a
+            for a in existing
+            if a.artifact_type == artifact.artifact_type and a.created_by != artifact.created_by
+        ]
         if clashes:
             conflicts.append(
                 Conflict(
@@ -174,9 +192,11 @@ class PSMPEngine:
                 )
         return conflicts
 
-    def _emit_conflict_event(self, project_id: str, artifact_id: str, conflicts: Sequence[Conflict]) -> None:
+    def _emit_conflict_event(
+        self, project_id: str, artifact_id: str, conflicts: Sequence[Conflict]
+    ) -> None:
         # Serialize conflicts to dicts before including in event changes
-        conflicts_data = [conflict.model_dump(mode='json') for conflict in conflicts]
+        conflicts_data = [conflict.model_dump(mode="json") for conflict in conflicts]
         event = Event(
             event_type=EventType.CONFLICT_DETECTED,
             resource_id=artifact_id,

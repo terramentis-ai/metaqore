@@ -40,7 +40,9 @@ class _PassthroughPSMP:
 
 def _seed_project(manager: StateManager, *, name: str = "Demo") -> tuple[Project, Artifact, Task]:
     project = manager.create_project(Project(name=name))
-    artifact = Artifact(project_id=project.id, artifact_type="spec", data={"doc": "v1"}, created_by="agent")
+    artifact = Artifact(
+        project_id=project.id, artifact_type="spec", data={"doc": "v1"}, created_by="agent"
+    )
     manager.save_artifact(artifact)
     task = Task(project_id=project.id, title="Outline spec")
     manager.save_task(task)
@@ -78,7 +80,9 @@ def test_restore_checkpoint_reverts_project_state(backend: SQLiteBackend) -> Non
 
     baseline = manager.create_checkpoint(project.id, "baseline")
 
-    artifact_v2 = Artifact(project_id=project.id, artifact_type="spec", data={"doc": "v2"}, created_by="agent")
+    artifact_v2 = Artifact(
+        project_id=project.id, artifact_type="spec", data={"doc": "v2"}, created_by="agent"
+    )
     manager.save_artifact(artifact_v2)
     task_v2 = Task(project_id=project.id, title="Second phase")
     manager.save_task(task_v2)

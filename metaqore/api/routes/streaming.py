@@ -38,7 +38,9 @@ async def websocket_stream(websocket: WebSocket) -> None:
             elif action == "unsubscribe":
                 event_types = _coerce_list(payload.get("event_types") or ["*"])
                 await manager.unsubscribe(websocket, event_types=event_types)
-                await websocket.send_json({"type": "system.unsubscribed", "event_types": event_types})
+                await websocket.send_json(
+                    {"type": "system.unsubscribed", "event_types": event_types}
+                )
             elif action == "ping":
                 await websocket.send_json({"type": "system.pong"})
             else:

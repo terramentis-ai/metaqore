@@ -111,7 +111,9 @@ class WebhookDispatcher:
                     timeout=endpoint.timeout_seconds,
                 )
                 if response.status_code in (200, 201, 202):
-                    logger.info("Webhook %s delivered (attempt %d)", endpoint.webhook_id, attempt + 1)
+                    logger.info(
+                        "Webhook %s delivered (attempt %d)", endpoint.webhook_id, attempt + 1
+                    )
                     return True
                 logger.warning(
                     "Webhook %s failed with %d (attempt %d)",
@@ -120,9 +122,14 @@ class WebhookDispatcher:
                     attempt + 1,
                 )
             except httpx.RequestError as exc:
-                logger.warning("Webhook %s request error: %s (attempt %d)", endpoint.webhook_id, exc, attempt + 1)
+                logger.warning(
+                    "Webhook %s request error: %s (attempt %d)",
+                    endpoint.webhook_id,
+                    exc,
+                    attempt + 1,
+                )
                 if attempt < endpoint.retries - 1:
-                    await asyncio.sleep(2 ** attempt)  # Exponential backoff
+                    await asyncio.sleep(2**attempt)  # Exponential backoff
 
         logger.error("Webhook %s failed after %d retries", endpoint.webhook_id, endpoint.retries)
         return False

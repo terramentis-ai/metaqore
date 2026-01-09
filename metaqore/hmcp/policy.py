@@ -175,8 +175,7 @@ class HierarchicalChainingPolicy:
         if not task_isolation_passed:
             allowed = False
             reasons.append(
-                "Isolation requirement not satisfied: "
-                f"{self._trigger.isolation_requirement}"
+                "Isolation requirement not satisfied: " f"{self._trigger.isolation_requirement}"
             )
 
         if candidate_parameter_count is not None and next_level is not None:
@@ -189,9 +188,7 @@ class HierarchicalChainingPolicy:
                 )
 
         if allowed:
-            reasons.append(
-                "All spawning requirements satisfied; proceed with specialist proposal"
-            )
+            reasons.append("All spawning requirements satisfied; proceed with specialist proposal")
 
         return SpawnDecision(allowed=allowed, reasons=tuple(reasons), next_level=next_level)
 
@@ -218,9 +215,7 @@ def _parse_parameter_budget(raw_value: str) -> int:
     try:
         value = float(cleaned)
     except ValueError as exc:
-        raise ChainingPolicyError(
-            f"Unable to parse parameter budget '{raw_value}'"
-        ) from exc
+        raise ChainingPolicyError(f"Unable to parse parameter budget '{raw_value}'") from exc
 
     multiplier = suffix_multiplier.get(unit, 1)
     return int(value * multiplier)
