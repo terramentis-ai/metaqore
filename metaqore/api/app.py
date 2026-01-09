@@ -19,6 +19,7 @@ from metaqore.core.state_manager import StateManager
 from metaqore.gateway import InMemoryGatewayQueue
 from metaqore.hmcp import ChainingOrchestrator, HMCPService
 from metaqore.logger import configure_logging, get_logger
+from metaqore.storage.backends.postgres import PostgreSQLBackend
 from metaqore.storage.backends.sqlite import SQLiteBackend
 from metaqore.streaming.hub import get_event_hub
 
@@ -35,7 +36,13 @@ def _get_version() -> str:
 def _create_state_layer(
     config: MetaQoreConfig,
 ) -> tuple[StateManager, PSMPEngine, SecureGateway]:
-    backend = SQLiteBackend(config.storage_dsn)
+    if config.storage_backend == "postgres":
+        backend = PostgreSQLBackend(config.storage_dsn)
+    elif config.storage_backend == "sqlite":
+        backend = SQLiteBackend(config.storage_dsn)
+    else:
+        raise ValueError(f"Unsupported storage backend: {config.storage_backend}")
+    
     state_manager = StateManager(backend=backend)
     psmp_engine = PSMPEngine(state_manager=state_manager, config=config)
     state_manager.attach_psmp_engine(psmp_engine)
