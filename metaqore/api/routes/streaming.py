@@ -34,7 +34,9 @@ async def websocket_stream(websocket: WebSocket) -> None:
                     project_ids=project_ids,
                     filters=filters,
                 )
-                await websocket.send_json({"type": "system.subscribed", "event_types": event_types})
+                await websocket.send_json(
+                    {"type": "system.subscribed", "event_types": event_types}
+                )
             elif action == "unsubscribe":
                 event_types = _coerce_list(payload.get("event_types") or ["*"])
                 await manager.unsubscribe(websocket, event_types=event_types)
@@ -44,7 +46,9 @@ async def websocket_stream(websocket: WebSocket) -> None:
             elif action == "ping":
                 await websocket.send_json({"type": "system.pong"})
             else:
-                await websocket.send_json({"type": "system.error", "message": "Unknown action"})
+                await websocket.send_json(
+                    {"type": "system.error", "message": "Unknown action"}
+                )
     except WebSocketDisconnect:
         await manager.unregister(websocket)
 

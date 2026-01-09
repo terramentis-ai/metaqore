@@ -24,7 +24,9 @@ logger = get_logger(__name__)
 class PSMPEngine:
     """Core governance layer that validates and declares artifacts."""
 
-    def __init__(self, state_manager: Any, *, config: Optional[MetaQoreConfig] = None) -> None:
+    def __init__(
+        self, state_manager: Any, *, config: Optional[MetaQoreConfig] = None
+    ) -> None:
         self.config = config or MetaQoreConfig()
         self.state_manager = state_manager
 
@@ -90,7 +92,9 @@ class PSMPEngine:
         artifacts = self.state_manager.list_artifacts(project_id)
         return BlockingReport.from_artifacts(project_id, artifacts)
 
-    def resolve_conflict(self, conflict: Conflict, strategy: ResolutionStrategy) -> Conflict:
+    def resolve_conflict(
+        self, conflict: Conflict, strategy: ResolutionStrategy
+    ) -> Conflict:
         conflict.mark_resolved(strategy)
         self.state_manager.update_conflict(conflict)
         logger.info(
@@ -113,7 +117,9 @@ class PSMPEngine:
     def _next_version(self, project_id: str, artifact_type: str) -> int:
         artifacts = self.state_manager.list_artifacts(project_id)
         versions = [
-            artifact.version for artifact in artifacts if artifact.artifact_type == artifact_type
+            artifact.version
+            for artifact in artifacts
+            if artifact.artifact_type == artifact_type
         ]
         return (max(versions) + 1) if versions else 1
 
@@ -148,7 +154,8 @@ class PSMPEngine:
         clashes = [
             a
             for a in existing
-            if a.artifact_type == artifact.artifact_type and a.created_by != artifact.created_by
+            if a.artifact_type == artifact.artifact_type
+            and a.created_by != artifact.created_by
         ]
         if clashes:
             conflicts.append(

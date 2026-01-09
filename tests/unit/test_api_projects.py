@@ -51,7 +51,9 @@ def test_project_crud_flow(tmp_path) -> None:
     assert get_response.json()["data"]["id"] == project_id
 
     update_payload = {"description": "Updated", "status": "planning"}
-    update_response = client.patch(f"/api/v1/projects/{project_id}", json=update_payload)
+    update_response = client.patch(
+        f"/api/v1/projects/{project_id}", json=update_payload
+    )
     assert update_response.status_code == 200
     assert update_response.json()["data"]["description"] == "Updated"
     assert update_response.json()["data"]["status"] == "planning"
@@ -67,7 +69,9 @@ def test_project_crud_flow(tmp_path) -> None:
 def test_project_update_requires_fields(tmp_path) -> None:
     client = _build_test_client(tmp_path)
     create_payload = {"name": "Needs Update"}
-    project_id = client.post("/api/v1/projects", json=create_payload).json()["data"]["id"]
+    project_id = client.post("/api/v1/projects", json=create_payload).json()["data"][
+        "id"
+    ]
 
     empty_update = client.patch(f"/api/v1/projects/{project_id}", json={})
     assert empty_update.status_code == 400

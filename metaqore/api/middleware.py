@@ -80,7 +80,11 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
     """Simple API-key guard for all API routes."""
 
     def __init__(
-        self, app: ASGIApp, *, api_key: Optional[str], header_name: str = "Authorization"
+        self,
+        app: ASGIApp,
+        *,
+        api_key: Optional[str],
+        header_name: str = "Authorization",
     ) -> None:
         super().__init__(app)
         self._api_key = api_key

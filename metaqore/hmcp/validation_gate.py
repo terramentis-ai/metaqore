@@ -42,7 +42,9 @@ class ValidationGateRunner:
             raise ValueError("validation_gate config must define at least one stage")
         self._stages = stages
 
-    def run(self, specialist: SpecialistModel, outcome: TrainingOutcome) -> ValidationGateReport:
+    def run(
+        self, specialist: SpecialistModel, outcome: TrainingOutcome
+    ) -> ValidationGateReport:
         stage_results: List[ValidationStageResult] = []
         for stage in self._stages:
             stage_name = stage.get("stage", "unknown_stage")
@@ -73,7 +75,12 @@ class ValidationGateRunner:
             score = metrics.get("functional_accuracy", specialist.confidence)
             drop = max(0.0, previous - score)
             passed = drop <= allowed_drop
-            details = {"baseline": previous, "score": score, "drop": drop, "max_drop": allowed_drop}
+            details = {
+                "baseline": previous,
+                "score": score,
+                "drop": drop,
+                "max_drop": allowed_drop,
+            }
         elif stage_name == "adversarial_robustness":
             required = bool(stage_config.get("must_pass", True))
             robustness = metrics.get("robustness", metrics.get("robustness_score", 0.9))

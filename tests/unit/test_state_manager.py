@@ -38,10 +38,15 @@ class _PassthroughPSMP:
         return artifact
 
 
-def _seed_project(manager: StateManager, *, name: str = "Demo") -> tuple[Project, Artifact, Task]:
+def _seed_project(
+    manager: StateManager, *, name: str = "Demo"
+) -> tuple[Project, Artifact, Task]:
     project = manager.create_project(Project(name=name))
     artifact = Artifact(
-        project_id=project.id, artifact_type="spec", data={"doc": "v1"}, created_by="agent"
+        project_id=project.id,
+        artifact_type="spec",
+        data={"doc": "v1"},
+        created_by="agent",
     )
     manager.save_artifact(artifact)
     task = Task(project_id=project.id, title="Outline spec")
@@ -81,7 +86,10 @@ def test_restore_checkpoint_reverts_project_state(backend: SQLiteBackend) -> Non
     baseline = manager.create_checkpoint(project.id, "baseline")
 
     artifact_v2 = Artifact(
-        project_id=project.id, artifact_type="spec", data={"doc": "v2"}, created_by="agent"
+        project_id=project.id,
+        artifact_type="spec",
+        data={"doc": "v2"},
+        created_by="agent",
     )
     manager.save_artifact(artifact_v2)
     task_v2 = Task(project_id=project.id, title="Second phase")
@@ -101,7 +109,9 @@ def test_restore_checkpoint_reverts_project_state(backend: SQLiteBackend) -> Non
     assert any(label.startswith("auto-backup-") for label in checkpoint_labels)
 
 
-def test_secure_gateway_allows_local_provider(tmp_path: Path, backend: SQLiteBackend) -> None:
+def test_secure_gateway_allows_local_provider(
+    tmp_path: Path, backend: SQLiteBackend
+) -> None:
     manager = StateManager(backend)
     manager.attach_psmp_engine(_PassthroughPSMP(manager))
     auditor = ComplianceAuditor(log_dir=tmp_path)
@@ -126,7 +136,9 @@ def test_secure_gateway_allows_local_provider(tmp_path: Path, backend: SQLiteBac
     assert stored.id == artifact.id
 
 
-def test_secure_gateway_blocks_disallowed_provider(tmp_path: Path, backend: SQLiteBackend) -> None:
+def test_secure_gateway_blocks_disallowed_provider(
+    tmp_path: Path, backend: SQLiteBackend
+) -> None:
     manager = StateManager(backend)
     manager.attach_psmp_engine(_PassthroughPSMP(manager))
     auditor = ComplianceAuditor(log_dir=tmp_path)

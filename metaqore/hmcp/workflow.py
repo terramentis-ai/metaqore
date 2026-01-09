@@ -59,13 +59,17 @@ class ProposalEvaluation:
 class SpecialistWorkflow:
     """Coordinates SkillRegistry and hierarchy policy checks."""
 
-    def __init__(self, registry: SkillRegistry, policy: HierarchicalChainingPolicy) -> None:
+    def __init__(
+        self, registry: SkillRegistry, policy: HierarchicalChainingPolicy
+    ) -> None:
         self._registry = registry
         self._policy = policy
 
     @classmethod
     def from_policy(cls) -> "SpecialistWorkflow":
-        return cls(SkillRegistry.from_policy(), HierarchicalChainingPolicy.from_policy())
+        return cls(
+            SkillRegistry.from_policy(), HierarchicalChainingPolicy.from_policy()
+        )
 
     @property
     def registry(self) -> SkillRegistry:
@@ -121,7 +125,9 @@ class SpecialistWorkflow:
 
         if target_level is not None and proposal.parameter_count is not None:
             try:
-                self._policy.validate_model_size(target_level.index, proposal.parameter_count)
+                self._policy.validate_model_size(
+                    target_level.index, proposal.parameter_count
+                )
                 notes.append("Parameter count fits within hierarchy limits")
             except ChainingPolicyError as exc:
                 errors.append(str(exc))
@@ -155,7 +161,9 @@ class SpecialistWorkflow:
         enriched_metadata: Dict[str, Any] = {**(metadata or {})}
         enriched_metadata.setdefault("skill_description", evaluation.skill.description)
         enriched_metadata.setdefault("hmcp_level", evaluation.target_level.key)
-        enriched_metadata.setdefault("hmcp_level_type", evaluation.target_level.level_type)
+        enriched_metadata.setdefault(
+            "hmcp_level_type", evaluation.target_level.level_type
+        )
         enriched_metadata.setdefault("teachers", list(proposal.teachers))
         enriched_metadata.setdefault("requested_size_mb", proposal.requested_size_mb)
 

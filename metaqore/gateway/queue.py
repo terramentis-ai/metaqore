@@ -35,7 +35,9 @@ class GatewayQueue:
     def enqueue(self, job: GatewayJob) -> None:  # pragma: no cover - interface
         raise NotImplementedError
 
-    def dequeue(self, max_items: int = 1) -> List[GatewayJob]:  # pragma: no cover - interface
+    def dequeue(
+        self, max_items: int = 1
+    ) -> List[GatewayJob]:  # pragma: no cover - interface
         raise NotImplementedError
 
     def peek(self) -> Optional[GatewayJob]:  # pragma: no cover - interface

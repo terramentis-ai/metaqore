@@ -15,7 +15,9 @@ class StorageBackend(ABC):
     # Project lifecycle
     # ------------------------------------------------------------------
     @abstractmethod
-    def save_project(self, project: Project) -> Project:  # pragma: no cover - interface definition
+    def save_project(
+        self, project: Project
+    ) -> Project:  # pragma: no cover - interface definition
         """Create or update a project record."""
 
     @abstractmethod
@@ -95,7 +97,9 @@ class StorageBackend(ABC):
         """Persist snapshot checkpoint."""
 
     @abstractmethod
-    def get_checkpoint(self, checkpoint_id: str) -> Optional[Checkpoint]:  # pragma: no cover
+    def get_checkpoint(
+        self, checkpoint_id: str
+    ) -> Optional[Checkpoint]:  # pragma: no cover
         """Retrieve checkpoint by ID."""
 
     @abstractmethod

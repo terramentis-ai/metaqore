@@ -28,9 +28,13 @@ def _get_state_manager(client: TestClient):
 
 def test_blocking_report_returns_empty_sets_for_new_project(tmp_path) -> None:
     client = _build_test_client(tmp_path)
-    project_id = client.post("/api/v1/projects", json={"name": "Gov Project"}).json()["data"]["id"]
+    project_id = client.post("/api/v1/projects", json={"name": "Gov Project"}).json()[
+        "data"
+    ]["id"]
 
-    response = client.get("/api/v1/governance/blocking-report", params={"project_id": project_id})
+    response = client.get(
+        "/api/v1/governance/blocking-report", params={"project_id": project_id}
+    )
     assert response.status_code == 200
     payload = response.json()
     assert payload["data"]["project_id"] == project_id
@@ -59,7 +63,9 @@ def test_compliance_export_json_returns_report_structure(tmp_path) -> None:
 
 def test_compliance_export_csv_returns_text_payload(tmp_path) -> None:
     client = _build_test_client(tmp_path)
-    response = client.get("/api/v1/governance/compliance/export", params={"format": "csv"})
+    response = client.get(
+        "/api/v1/governance/compliance/export", params={"format": "csv"}
+    )
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("text/csv")
     body = response.text.splitlines()
@@ -68,7 +74,9 @@ def test_compliance_export_csv_returns_text_payload(tmp_path) -> None:
 
 def test_conflict_listing_supports_filters(tmp_path) -> None:
     client = _build_test_client(tmp_path)
-    project_id = client.post("/api/v1/projects", json={"name": "Conflicts"}).json()["data"]["id"]
+    project_id = client.post("/api/v1/projects", json={"name": "Conflicts"}).json()[
+        "data"
+    ]["id"]
     state_manager = _get_state_manager(client)
 
     conflicts = []
@@ -80,7 +88,9 @@ def test_conflict_listing_supports_filters(tmp_path) -> None:
             description=f"Conflict {idx}",
             severity=severity,
             conflict_type=(
-                "parallel_creation" if severity is ConflictSeverity.HIGH else "version_mismatch"
+                "parallel_creation"
+                if severity is ConflictSeverity.HIGH
+                else "version_mismatch"
             ),
         )
         if severity is ConflictSeverity.LOW:
@@ -88,7 +98,9 @@ def test_conflict_listing_supports_filters(tmp_path) -> None:
         conflicts.append(conflict)
     state_manager.save_conflicts(conflicts)
 
-    base_response = client.get("/api/v1/governance/conflicts", params={"project_id": project_id})
+    base_response = client.get(
+        "/api/v1/governance/conflicts", params={"project_id": project_id}
+    )
     assert base_response.status_code == 200
     base_data = base_response.json()["data"]
     assert base_data["total"] == 3
@@ -120,7 +132,9 @@ def test_conflict_listing_supports_filters(tmp_path) -> None:
 
 def test_conflict_resolution_endpoint_updates_state(tmp_path) -> None:
     client = _build_test_client(tmp_path)
-    project_id = client.post("/api/v1/projects", json={"name": "Resolve"}).json()["data"]["id"]
+    project_id = client.post("/api/v1/projects", json={"name": "Resolve"}).json()[
+        "data"
+    ]["id"]
     state_manager = _get_state_manager(client)
 
     conflict = Conflict(

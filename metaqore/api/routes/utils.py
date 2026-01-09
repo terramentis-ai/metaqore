@@ -19,7 +19,9 @@ def build_response_metadata(request: Request) -> ResponseMetadata:
 T = TypeVar("T")
 
 
-def paginate_items(items: Sequence[T], page: int, page_size: int) -> Tuple[list[T], int]:
+def paginate_items(
+    items: Sequence[T], page: int, page_size: int
+) -> Tuple[list[T], int]:
     total = len(items)
     start = max(page - 1, 0) * page_size
     end = start + page_size

@@ -7,7 +7,11 @@ from typing import Any, Dict, Iterable, List, Optional, TYPE_CHECKING
 
 from metaqore.core.models import Artifact, Checkpoint, Conflict, Project, Task
 from metaqore.core.security import SecureGateway
-from metaqore.exceptions import ConflictDetectedError, VetoAppliedError, VetoExceptionContext
+from metaqore.exceptions import (
+    ConflictDetectedError,
+    VetoAppliedError,
+    VetoExceptionContext,
+)
 from metaqore.logger import get_logger
 from metaqore.storage.backend import StorageBackend
 
@@ -172,7 +176,9 @@ class StateManager:
         project_id = checkpoint.project_id
         existing_project = self.get_project(project_id)
         if existing_project is not None:
-            backup_label = f"auto-backup-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
+            backup_label = (
+                f"auto-backup-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
+            )
             self.create_checkpoint(project_id, backup_label)
 
         stored_checkpoints = self._backend.list_checkpoints(project_id)
@@ -190,7 +196,9 @@ class StateManager:
         tasks = [Task.model_validate(payload) for payload in tasks_payload]
         conflicts = [Conflict.model_validate(payload) for payload in conflicts_payload]
 
-        logger.info("Restoring project %s from checkpoint %s", project_id, checkpoint_id)
+        logger.info(
+            "Restoring project %s from checkpoint %s", project_id, checkpoint_id
+        )
         self._backend.delete_project(project_id)
         self._backend.save_project(project)
         for artifact in artifacts:
@@ -234,7 +242,8 @@ class StateManager:
         artifacts = [_artifact_payload(artifact) for artifact in project.artifacts]
         tasks = [task.model_dump(mode="json") for task in project.tasks]
         conflicts = [
-            conflict.model_dump(mode="json") for conflict in self.list_conflicts(project.id)
+            conflict.model_dump(mode="json")
+            for conflict in self.list_conflicts(project.id)
         ]
         project_payload = project.model_dump(mode="json")
         project_payload["artifacts"] = artifacts

@@ -66,7 +66,11 @@ def test_aggregator_tracks_event_metrics() -> None:
         resource_type="artifact",
         severity="info",
         metadata={
-            "llm_metadata": {"latency_ms": 123.45, "provider": "ollama", "scenario_tag": "test"}
+            "llm_metadata": {
+                "latency_ms": 123.45,
+                "provider": "ollama",
+                "scenario_tag": "test",
+            }
         },
     )
     aggregator.record_event(event)

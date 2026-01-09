@@ -39,7 +39,8 @@ def configure_logging(level: str | None = None) -> None:
     """
 
     logging.basicConfig(
-        level=getattr(logging, (level or _DEFAULT_LOG_LEVEL), logging.INFO), format=_LOG_FORMAT
+        level=getattr(logging, (level or _DEFAULT_LOG_LEVEL), logging.INFO),
+        format=_LOG_FORMAT,
     )
     logging.getLogger().addFilter(_ContextFilter())
 
@@ -58,5 +59,8 @@ def log_with_context(
 ) -> None:
     """Helper to emit a structured log message with additional context fields."""
 
-    extra = {"project_id": context.get("project_id", "-"), "agent": context.get("agent", "-")}
+    extra = {
+        "project_id": context.get("project_id", "-"),
+        "agent": context.get("agent", "-"),
+    }
     logger.log(level, message, extra=extra)

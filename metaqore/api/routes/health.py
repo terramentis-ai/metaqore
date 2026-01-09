@@ -12,7 +12,9 @@ from metaqore.config import MetaQoreConfig
 router = APIRouter(tags=["Health"])
 
 
-@router.get("/health", response_model=HealthResponse, summary="MetaQore API health check")
+@router.get(
+    "/health", response_model=HealthResponse, summary="MetaQore API health check"
+)
 async def health_check(request: Request) -> HealthResponse:
     """Return service health status and governance context."""
 

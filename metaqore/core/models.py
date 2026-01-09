@@ -221,7 +221,9 @@ class BlockingReport(MetaQoreModel):
     generated_at: datetime = Field(default_factory=current_utc)
 
     @classmethod
-    def from_artifacts(cls, project_id: str, artifacts: Sequence[Artifact]) -> "BlockingReport":
+    def from_artifacts(
+        cls, project_id: str, artifacts: Sequence[Artifact]
+    ) -> "BlockingReport":
         blocked = [artifact for artifact in artifacts if artifact.is_blocked]
         conflict_set: List[Conflict] = []
         blocked_ids: List[str] = []

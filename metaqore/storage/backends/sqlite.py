@@ -6,10 +6,26 @@ import contextlib
 from datetime import datetime
 from typing import Dict, Iterable, List, Optional, Type
 
-from sqlalchemy import JSON, Boolean, DateTime, Integer, String, create_engine, delete, select
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    Integer,
+    String,
+    create_engine,
+    delete,
+    select,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
-from metaqore.core.models import Artifact, Checkpoint, Conflict, Project, SpecialistModel, Task
+from metaqore.core.models import (
+    Artifact,
+    Checkpoint,
+    Conflict,
+    Project,
+    SpecialistModel,
+    Task,
+)
 from metaqore.storage.backend import StorageBackend
 
 
@@ -121,10 +137,16 @@ class SQLiteBackend(StorageBackend):
 
     def delete_project(self, project_id: str) -> None:
         with Session(self.engine) as session:
-            session.execute(delete(ArtifactTable).where(ArtifactTable.project_id == project_id))
+            session.execute(
+                delete(ArtifactTable).where(ArtifactTable.project_id == project_id)
+            )
             session.execute(delete(TaskTable).where(TaskTable.project_id == project_id))
-            session.execute(delete(ConflictTable).where(ConflictTable.project_id == project_id))
-            session.execute(delete(CheckpointTable).where(CheckpointTable.project_id == project_id))
+            session.execute(
+                delete(ConflictTable).where(ConflictTable.project_id == project_id)
+            )
+            session.execute(
+                delete(CheckpointTable).where(CheckpointTable.project_id == project_id)
+            )
             row = session.get(ProjectTable, project_id)
             if row:
                 session.delete(row)

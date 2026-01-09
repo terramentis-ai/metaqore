@@ -85,7 +85,9 @@ class GatewayWorker:
         if self._thread and self._thread.is_alive():
             return
         self._stop_event.clear()
-        self._thread = threading.Thread(target=self._run_loop, name="GatewayWorker", daemon=True)
+        self._thread = threading.Thread(
+            target=self._run_loop, name="GatewayWorker", daemon=True
+        )
         self._thread.start()
 
     def stop(self) -> None:
@@ -155,41 +157,63 @@ class GatewayWorker:
 
     def _ensure_profile(self, agent_name: str) -> None:
         if not self._prompt_engine.has_profile(agent_name):
-            self._prompt_engine.register_profile(agent_name, template=self.DEFAULT_PROFILE_TEMPLATE)
+            self._prompt_engine.register_profile(
+                agent_name, template=self.DEFAULT_PROFILE_TEMPLATE
+            )
 
     @staticmethod
     def _extract_metadata(job: GatewayJob) -> Dict[str, Any]:
-        payload_metadata = job.payload.get("metadata") if isinstance(job.payload, dict) else None
+        payload_metadata = (
+            job.payload.get("metadata") if isinstance(job.payload, dict) else None
+        )
         if isinstance(payload_metadata, dict):
             return dict(payload_metadata)
         return {}
 
     @staticmethod
     def _format_teachers(job: GatewayJob) -> str:
-        teachers = job.payload.get("teachers") if isinstance(job.payload, dict) else None
+        teachers = (
+            job.payload.get("teachers") if isinstance(job.payload, dict) else None
+        )
         if isinstance(teachers, list):
             return ", ".join(str(teacher) for teacher in teachers) or "(none)"
         return "(unknown)"
 
     def _build_task_context(self, job: GatewayJob, metadata: Dict[str, Any]) -> str:
         hmcp_meta = (
-            metadata.get("hmcp_metadata") if isinstance(metadata.get("hmcp_metadata"), dict) else {}
+            metadata.get("hmcp_metadata")
+            if isinstance(metadata.get("hmcp_metadata"), dict)
+            else {}
         )
-        intent = metadata.get("intent") or hmcp_meta.get("intent") or "specialist_training"
-        level_key = job.payload.get("level_key") if isinstance(job.payload, dict) else None
-        level_type = job.payload.get("level_type") if isinstance(job.payload, dict) else None
+        intent = (
+            metadata.get("intent") or hmcp_meta.get("intent") or "specialist_training"
+        )
+        level_key = (
+            job.payload.get("level_key") if isinstance(job.payload, dict) else None
+        )
+        level_type = (
+            job.payload.get("level_type") if isinstance(job.payload, dict) else None
+        )
         parameter_count = (
-            job.payload.get("parameter_count") if isinstance(job.payload, dict) else None
+            job.payload.get("parameter_count")
+            if isinstance(job.payload, dict)
+            else None
         )
-        confidence = job.payload.get("confidence") if isinstance(job.payload, dict) else None
-        requested_size = metadata.get("requested_size_mb") or hmcp_meta.get("requested_size_mb")
+        confidence = (
+            job.payload.get("confidence") if isinstance(job.payload, dict) else None
+        )
+        requested_size = metadata.get("requested_size_mb") or hmcp_meta.get(
+            "requested_size_mb"
+        )
         summary = metadata.get("summary") or metadata.get("description")
         teachers = self._format_teachers(job)
 
         context_lines = [f"Intent: {intent}", f"Project: {job.project_id}"]
         context_lines.append(f"Skill: {job.skill_id}")
         if level_key:
-            context_lines.append(f"Target level: {level_key} ({level_type or 'unknown'})")
+            context_lines.append(
+                f"Target level: {level_key} ({level_type or 'unknown'})"
+            )
         if parameter_count:
             context_lines.append(f"Parameter count: {parameter_count}")
         if confidence is not None:

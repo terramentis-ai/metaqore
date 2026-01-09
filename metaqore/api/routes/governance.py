@@ -10,7 +10,11 @@ from typing import Any, Dict, Iterable
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
 
-from metaqore.api.dependencies import get_psmp_engine, get_secure_gateway, get_state_manager
+from metaqore.api.dependencies import (
+    get_psmp_engine,
+    get_secure_gateway,
+    get_state_manager,
+)
 from metaqore.api.routes.utils import build_response_metadata, paginate_items
 from metaqore.api.schemas import (
     AuditEventRecord,
@@ -42,7 +46,9 @@ async def list_conflicts(
     project_id: str = Query(..., description="Project identifier"),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(25, ge=1, le=200, description="Items per page"),
-    severity: ConflictSeverity | None = Query(None, description="Filter by severity level"),
+    severity: ConflictSeverity | None = Query(
+        None, description="Filter by severity level"
+    ),
     resolved: bool | None = Query(None, description="Filter by resolution state"),
     conflict_type: str | None = Query(None, description="Filter by conflict type"),
     state_manager: StateManager = Depends(get_state_manager),
@@ -53,11 +59,19 @@ async def list_conflicts(
 
     conflicts = state_manager.list_conflicts(project_id)
     if severity is not None:
-        conflicts = [conflict for conflict in conflicts if conflict.severity == severity]
+        conflicts = [
+            conflict for conflict in conflicts if conflict.severity == severity
+        ]
     if resolved is not None:
-        conflicts = [conflict for conflict in conflicts if conflict.resolved is resolved]
+        conflicts = [
+            conflict for conflict in conflicts if conflict.resolved is resolved
+        ]
     if conflict_type:
-        conflicts = [conflict for conflict in conflicts if conflict.conflict_type == conflict_type]
+        conflicts = [
+            conflict
+            for conflict in conflicts
+            if conflict.conflict_type == conflict_type
+        ]
 
     paged_conflicts, total = paginate_items(conflicts, page, page_size)
     filters: Dict[str, Any] = {}
@@ -116,7 +130,9 @@ async def get_blocking_report(
     if project is None:
         raise HTTPException(status_code=404, detail="Project not found")
     report = psmp_engine.get_blocking_report(project_id)
-    return BlockingReportResponse(data=report, metadata=build_response_metadata(request))
+    return BlockingReportResponse(
+        data=report, metadata=build_response_metadata(request)
+    )
 
 
 @router.get(
@@ -153,9 +169,7 @@ async def export_compliance_report(
 
     if export_format.lower() == "csv":
         csv_payload = _serialize_events_to_csv(events)
-        filename = (
-            f"compliance_{resolved_org}_{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.csv"
-        )
+        filename = f"compliance_{resolved_org}_{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.csv"
         response = PlainTextResponse(csv_payload, media_type="text/csv")
         response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
         response.headers["X-Request-ID"] = metadata.request_id

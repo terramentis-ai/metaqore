@@ -33,7 +33,9 @@ class MetaQoreConfig(BaseSettings):
     max_parallel_branches: int = Field(default=5, ge=1, le=20)
     max_conversation_turns: int = Field(default=10, ge=1, le=100)
     max_conversation_participants: int = Field(default=6, ge=1, le=32)
-    storage_backend: str = Field(default="sqlite", description="sqlite | postgres | redis")
+    storage_backend: str = Field(
+        default="sqlite", description="sqlite | postgres | redis"
+    )
     storage_dsn: str = Field(default="sqlite:///metaqore.db")
     secure_gateway_policy: str = Field(
         default="default_local_first",
@@ -63,7 +65,9 @@ class MetaQoreConfig(BaseSettings):
 
     @field_validator("max_parallel_branches")
     @classmethod
-    def _validate_parallel_branches(cls, value: int, info: ValidationInfo) -> int:  # noqa: D401
+    def _validate_parallel_branches(
+        cls, value: int, info: ValidationInfo
+    ) -> int:  # noqa: D401
         governance_mode = (info.data or {}).get("governance_mode")
         if governance_mode == GovernanceMode.STRICT and value > 1:
             raise ValueError("STRICT mode allows max_parallel_branches <= 1")

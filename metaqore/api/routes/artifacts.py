@@ -20,7 +20,9 @@ from metaqore.exceptions import ConflictDetectedError
 router = APIRouter(prefix="/artifacts", tags=["Artifacts"])
 
 
-@router.get("", response_model=ArtifactListResponse, summary="List artifacts by project")
+@router.get(
+    "", response_model=ArtifactListResponse, summary="List artifacts by project"
+)
 async def list_artifacts(
     request: Request,
     project_id: str = Query(..., description="Project identifier"),
@@ -32,9 +34,15 @@ async def list_artifacts(
 ) -> ArtifactListResponse:
     artifacts = state_manager.list_artifacts(project_id)
     if artifact_type:
-        artifacts = [artifact for artifact in artifacts if artifact.artifact_type == artifact_type]
+        artifacts = [
+            artifact
+            for artifact in artifacts
+            if artifact.artifact_type == artifact_type
+        ]
     if created_by:
-        artifacts = [artifact for artifact in artifacts if artifact.created_by == created_by]
+        artifacts = [
+            artifact for artifact in artifacts if artifact.created_by == created_by
+        ]
 
     paged_artifacts, total = paginate_items(artifacts, page, page_size)
     filters = {}
@@ -68,7 +76,9 @@ async def create_artifact(
     artifact = Artifact(**payload.model_dump())
     try:
         saved = state_manager.create_artifact(artifact)
-    except ConflictDetectedError as exc:  # pragma: no cover - exercised via integration tests
+    except (
+        ConflictDetectedError
+    ) as exc:  # pragma: no cover - exercised via integration tests
         raise HTTPException(status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     return ArtifactResponse(data=saved, metadata=build_response_metadata(request))
 
@@ -106,7 +116,9 @@ async def update_artifact(
 
     updates = payload.model_dump(exclude_unset=True)
     if not updates:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="No fields provided for update")
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, detail="No fields provided for update"
+        )
 
     updated_artifact = existing.model_copy(update=updates)
     saved = state_manager.save_artifact(updated_artifact)

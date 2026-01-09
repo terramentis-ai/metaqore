@@ -4,7 +4,15 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
-from metaqore.api.routes import artifacts, events, governance, health, projects, specialists, tasks
+from metaqore.api.routes import (
+    artifacts,
+    events,
+    governance,
+    health,
+    projects,
+    specialists,
+    tasks,
+)
 
 DEFAULT_API_PREFIX = "/api/v1"
 

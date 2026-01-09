@@ -46,10 +46,14 @@ def test_classify_task_uses_priority_hints() -> None:
     )
     assert validator == TaskSensitivity.INTERNAL
 
-    planner = gateway.classify_task(agent_name="PlannerAgent", task_type="governance plan")
+    planner = gateway.classify_task(
+        agent_name="PlannerAgent", task_type="governance plan"
+    )
     assert planner == TaskSensitivity.INTERNAL
 
-    public = gateway.classify_task(agent_name="CoderAgent", task_type="implement feature")
+    public = gateway.classify_task(
+        agent_name="CoderAgent", task_type="implement feature"
+    )
     assert public == TaskSensitivity.PUBLIC
 
 

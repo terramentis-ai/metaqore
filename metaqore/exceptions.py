@@ -14,7 +14,9 @@ from typing import Any, Dict, Optional
 class MetaQoreError(Exception):
     """Base class for all MetaQore-specific exceptions."""
 
-    def __init__(self, message: str, *, metadata: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(
+        self, message: str, *, metadata: Optional[Dict[str, Any]] = None
+    ) -> None:
         super().__init__(message)
         self.metadata = metadata or {}
 

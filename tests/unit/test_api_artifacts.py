@@ -54,7 +54,9 @@ def test_artifact_crud_flow(tmp_path) -> None:
     assert get_response.json()["data"]["artifact_type"] == "spec"
 
     update_payload = {"data": {"summary": "Updated"}, "version": 2}
-    update_response = client.patch(f"/api/v1/artifacts/{artifact_id}", json=update_payload)
+    update_response = client.patch(
+        f"/api/v1/artifacts/{artifact_id}", json=update_payload
+    )
     assert update_response.status_code == 200
     assert update_response.json()["data"]["version"] == 2
 

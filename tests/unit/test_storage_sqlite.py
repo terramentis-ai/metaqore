@@ -7,7 +7,14 @@ from pathlib import Path
 
 import pytest
 
-from metaqore.core.models import Artifact, Checkpoint, Conflict, Project, Task, TaskStatus
+from metaqore.core.models import (
+    Artifact,
+    Checkpoint,
+    Conflict,
+    Project,
+    Task,
+    TaskStatus,
+)
 from metaqore.storage.backends.sqlite import SQLiteBackend
 
 
@@ -35,10 +42,18 @@ def test_artifact_version_ordering(backend: SQLiteBackend) -> None:
     backend.save_project(project)
 
     a1 = Artifact(
-        project_id=project.id, artifact_type="spec", data={}, created_by="agent", version=1
+        project_id=project.id,
+        artifact_type="spec",
+        data={},
+        created_by="agent",
+        version=1,
     )
     a2 = Artifact(
-        project_id=project.id, artifact_type="spec", data={}, created_by="agent", version=2
+        project_id=project.id,
+        artifact_type="spec",
+        data={},
+        created_by="agent",
+        version=2,
     )
     backend.save_artifact(a2)
     backend.save_artifact(a1)
@@ -84,7 +99,9 @@ def test_checkpoint_roundtrip(backend: SQLiteBackend) -> None:
     project = Project(name="Checkpoints")
     backend.save_project(project)
     checkpoint = Checkpoint(
-        project_id=project.id, label="baseline", snapshot={"project": project.model_dump()}
+        project_id=project.id,
+        label="baseline",
+        snapshot={"project": project.model_dump()},
     )
 
     backend.save_checkpoint(checkpoint)

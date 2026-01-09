@@ -27,7 +27,9 @@ def load_hmcp_config(path: str | Path | None = None) -> Dict[str, Any]:
 
     policy = data.get("gated_chaining_protocol")
     if not policy:
-        raise HMCPConfigError("Invalid HMCP policy file: missing 'gated_chaining_protocol' section")
+        raise HMCPConfigError(
+            "Invalid HMCP policy file: missing 'gated_chaining_protocol' section"
+        )
     return policy
 
 
