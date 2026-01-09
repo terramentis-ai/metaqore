@@ -54,9 +54,7 @@ async def lifespan(app: FastAPI):
         get_event_hub().set_loop(loop)
         logger.info("StreamingEventHub bound to main event loop")
     except RuntimeError:
-        logger.warning(
-            "Could not bind StreamingEventHub to event loop (no running loop)"
-        )
+        logger.warning("Could not bind StreamingEventHub to event loop (no running loop)")
 
     yield
 

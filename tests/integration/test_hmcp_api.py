@@ -25,9 +25,7 @@ def test_specialist_draft_persists_and_enqueues_gateway_job(tmp_path) -> None:
     client = _build_test_client(tmp_path)
 
     project_payload = {"name": "HMCP Project"}
-    project_id = client.post("/api/v1/projects", json=project_payload).json()["data"][
-        "id"
-    ]
+    project_id = client.post("/api/v1/projects", json=project_payload).json()["data"]["id"]
 
     payload = {
         "project_id": project_id,
@@ -70,9 +68,7 @@ def test_specialist_draft_conflict_returns_409(tmp_path) -> None:
     client = _build_test_client(tmp_path)
 
     project_payload = {"name": "HMCP Project"}
-    project_id = client.post("/api/v1/projects", json=project_payload).json()["data"][
-        "id"
-    ]
+    project_id = client.post("/api/v1/projects", json=project_payload).json()["data"]["id"]
 
     payload = {
         "project_id": project_id,
@@ -98,9 +94,7 @@ def test_specialist_draft_invalid_teachers_returns_422(tmp_path) -> None:
     client = _build_test_client(tmp_path)
 
     project_payload = {"name": "HMCP Project"}
-    project_id = client.post("/api/v1/projects", json=project_payload).json()["data"][
-        "id"
-    ]
+    project_id = client.post("/api/v1/projects", json=project_payload).json()["data"]["id"]
 
     payload = {
         "project_id": project_id,
@@ -123,9 +117,7 @@ def test_specialist_run_endpoint_executes_pipeline(tmp_path) -> None:
     client = _build_test_client(tmp_path)
 
     project_payload = {"name": "HMCP Project"}
-    project_id = client.post("/api/v1/projects", json=project_payload).json()["data"][
-        "id"
-    ]
+    project_id = client.post("/api/v1/projects", json=project_payload).json()["data"]["id"]
 
     payload = {
         "project_id": project_id,

@@ -42,9 +42,7 @@ class ValidationGateRunner:
             raise ValueError("validation_gate config must define at least one stage")
         self._stages = stages
 
-    def run(
-        self, specialist: SpecialistModel, outcome: TrainingOutcome
-    ) -> ValidationGateReport:
+    def run(self, specialist: SpecialistModel, outcome: TrainingOutcome) -> ValidationGateReport:
         stage_results: List[ValidationStageResult] = []
         for stage in self._stages:
             stage_name = stage.get("stage", "unknown_stage")

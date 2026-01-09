@@ -104,9 +104,7 @@ async def update_task(
 
     updates = payload.model_dump(exclude_unset=True)
     if not updates:
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST, detail="No fields provided for update"
-        )
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="No fields provided for update")
 
     updates["updated_at"] = datetime.now(timezone.utc)
     updated_task = existing.model_copy(update=updates)

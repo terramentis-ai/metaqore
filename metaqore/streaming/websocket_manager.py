@@ -58,9 +58,7 @@ class WebSocketConnectionManager:
             if filters:
                 subscription.filters.update(filters)
 
-    async def unsubscribe(
-        self, websocket: WebSocket, *, event_types: Iterable[str]
-    ) -> None:
+    async def unsubscribe(self, websocket: WebSocket, *, event_types: Iterable[str]) -> None:
         async with self._lock:
             subscription = self._subscriptions.get(websocket)
             if subscription is None:
@@ -89,10 +87,7 @@ class WebSocketConnectionManager:
                 for pattern in subscription.event_types
             ):
                 return False
-        if (
-            subscription.project_ids
-            and event.project_id not in subscription.project_ids
-        ):
+        if subscription.project_ids and event.project_id not in subscription.project_ids:
             return False
         agent_filter = subscription.filters.get("agent_name")
         if agent_filter and event.metadata.get("agent_name") != agent_filter:

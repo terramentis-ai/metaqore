@@ -44,9 +44,7 @@ class MockLLMResponse:
         """Return a core_cli.core.llm_client.LLMResponse if TerraQore is available."""
 
         if TerraLLMResponse is None:
-            raise RuntimeError(
-                "TerraQore LLMResponse is not available in this environment"
-            )
+            raise RuntimeError("TerraQore LLMResponse is not available in this environment")
         return TerraLLMResponse(
             content=self.content,
             provider=self.provider,
@@ -203,9 +201,7 @@ class MockLLMClient:
             success = True
             error = None
         else:
-            content = (
-                scenario.error_message if scenario and scenario.error_message else ""
-            )
+            content = scenario.error_message if scenario and scenario.error_message else ""
             success = False
             error = scenario.failure_mode or "scenario_failure"
             adversarial_applied = False
@@ -220,9 +216,7 @@ class MockLLMClient:
             "deterministic_seed": self._rng_seed,
             "timestamp": context.timestamp.isoformat(),
             "call_count": call_count,
-            "failure_mode": (
-                scenario.failure_mode if failure_triggered and scenario else None
-            ),
+            "failure_mode": (scenario.failure_mode if failure_triggered and scenario else None),
             "validation_passed": validation_passed,
             "adversarial_applied": adversarial_applied,
         }
@@ -243,9 +237,7 @@ class MockLLMClient:
     # ------------------------------------------------------------------
     # Internals
     # ------------------------------------------------------------------
-    def _select_scenario(
-        self, prompt: str, metadata: Dict[str, Any]
-    ) -> Optional[MockLLMScenario]:
+    def _select_scenario(self, prompt: str, metadata: Dict[str, Any]) -> Optional[MockLLMScenario]:
         for scenario in reversed(self._scenarios):  # last wins for overrides
             if scenario.matches(prompt, metadata):
                 return scenario
@@ -287,11 +279,7 @@ class MockLLMClient:
         )
 
     def _summary_response(self, context: MockPromptContext) -> str:
-        first_line = (
-            context.prompt.strip().splitlines()[0][:160]
-            if context.prompt.strip()
-            else ""
-        )
+        first_line = context.prompt.strip().splitlines()[0][:160] if context.prompt.strip() else ""
         return dedent(
             f"""
             ### Mock Summary ({self.model})
@@ -316,9 +304,7 @@ class MockLLMClient:
 
     @staticmethod
     def _format_timestamp(timestamp: datetime) -> str:
-        utc_timestamp = (
-            timestamp if timestamp.tzinfo else timestamp.replace(tzinfo=timezone.utc)
-        )
+        utc_timestamp = timestamp if timestamp.tzinfo else timestamp.replace(tzinfo=timezone.utc)
         return utc_timestamp.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
     def _estimate_usage(self, prompt: str, content: str) -> Dict[str, int]:
@@ -340,9 +326,7 @@ class MockLLMClient:
         delay = self._rng.uniform(low, high)
         time.sleep(delay)
 
-    def _increment_scenario_usage(
-        self, scenario: Optional[MockLLMScenario]
-    ) -> Optional[int]:
+    def _increment_scenario_usage(self, scenario: Optional[MockLLMScenario]) -> Optional[int]:
         if not scenario:
             return None
         state = self._scenario_state.setdefault(scenario.name, {"call_count": 0})
@@ -358,9 +342,7 @@ class MockLLMClient:
             return call_count == scenario.inject_after_uses
         return True
 
-    def _run_validation_hook(
-        self, scenario: Optional[MockLLMScenario], content: str
-    ) -> bool:
+    def _run_validation_hook(self, scenario: Optional[MockLLMScenario], content: str) -> bool:
         if scenario and scenario.validation_hook:
             try:
                 return bool(scenario.validation_hook(content))
@@ -368,14 +350,10 @@ class MockLLMClient:
                 return False
         return True
 
-    def _apply_edge_case_override(
-        self, scenario: Optional[MockLLMScenario], content: str
-    ) -> str:
+    def _apply_edge_case_override(self, scenario: Optional[MockLLMScenario], content: str) -> str:
         if not scenario:
             return content
-        edge_case_type = (
-            scenario.metadata.get("edge_case_type") if scenario.metadata else None
-        )
+        edge_case_type = scenario.metadata.get("edge_case_type") if scenario.metadata else None
         if edge_case_type:
             return self._generate_edge_case(str(edge_case_type))
         return content
@@ -416,9 +394,7 @@ class StatefulConversationHandler:
                 self.memory.pop(0)
         self.confidence = max(0.05, self.confidence - self.decay)
         memory_lines = (
-            "\n".join(f"- {item}" for item in self.memory)
-            if self.memory
-            else "- (empty)"
+            "\n".join(f"- {item}" for item in self.memory) if self.memory else "- (empty)"
         )
         return dedent(
             f"""

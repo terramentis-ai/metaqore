@@ -86,9 +86,7 @@ async def evaluate_specialist_proposal(
             parent_level_identifier=payload.parent_level_identifier,
             parameter_count=payload.parameter_count,
         )
-    except (
-        ValueError
-    ) as exc:  # pragma: no cover - pydantic should prevent, but guard anyway
+    except ValueError as exc:  # pragma: no cover - pydantic should prevent, but guard anyway
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
         ) from exc
@@ -101,9 +99,7 @@ async def evaluate_specialist_proposal(
         target_level=_level_info(evaluation.target_level),
         spawn_decision=_spawn_info(evaluation.spawn_decision),
     )
-    return SpecialistEvaluationResponse(
-        data=data, metadata=build_response_metadata(request)
-    )
+    return SpecialistEvaluationResponse(data=data, metadata=build_response_metadata(request))
 
 
 @router.post(
@@ -203,9 +199,7 @@ async def run_specialist_workflow(
         validation=outcome.validation.to_dict(),
         gateway_job_id=gateway_job_id,
     )
-    return SpecialistPipelineResponse(
-        data=data, metadata=build_response_metadata(request)
-    )
+    return SpecialistPipelineResponse(data=data, metadata=build_response_metadata(request))
 
 
 __all__ = ["router"]

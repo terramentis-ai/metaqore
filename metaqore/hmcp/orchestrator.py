@@ -115,15 +115,9 @@ class ChainingOrchestrator:
         )
 
         final_state = (
-            SpecialistLifecycle.ACTIVE
-            if validation_report.passed
-            else SpecialistLifecycle.BLOCKED
+            SpecialistLifecycle.ACTIVE if validation_report.passed else SpecialistLifecycle.BLOCKED
         )
-        reason = (
-            "Validation gate passed"
-            if validation_report.passed
-            else "Validation gate failed"
-        )
+        reason = "Validation gate passed" if validation_report.passed else "Validation gate failed"
         specialist = self._psmp.advance_lifecycle(
             specialist,
             final_state,

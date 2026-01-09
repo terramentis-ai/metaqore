@@ -131,9 +131,7 @@ class HMCPService:
         enriched.setdefault("has_sensitive_data", True)
         enriched.setdefault("hmcp_teacher_count", len(proposal.teachers))
         hmcp_meta = enriched.setdefault("hmcp_metadata", {})
-        hmcp_meta.setdefault(
-            "parent_level_identifier", proposal.parent_level_identifier
-        )
+        hmcp_meta.setdefault("parent_level_identifier", proposal.parent_level_identifier)
         hmcp_meta.setdefault("requested_size_mb", proposal.requested_size_mb)
         hmcp_meta.setdefault("intent", "specialist_training")
         return enriched
@@ -141,13 +139,9 @@ class HMCPService:
     @staticmethod
     def _build_profile_hash(specialist: SpecialistModel) -> str:
         digest = hashlib.sha256()
+        digest.update(f"{specialist.parent_agent}:{specialist.level_key}".encode("utf-8"))
         digest.update(
-            f"{specialist.parent_agent}:{specialist.level_key}".encode("utf-8")
-        )
-        digest.update(
-            ":".join(sorted(str(teacher) for teacher in specialist.teachers)).encode(
-                "utf-8"
-            )
+            ":".join(sorted(str(teacher) for teacher in specialist.teachers)).encode("utf-8")
         )
         return digest.hexdigest()[:32]
 

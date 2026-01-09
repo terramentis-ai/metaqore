@@ -38,9 +38,7 @@ class _PassthroughPSMP:
         return artifact
 
 
-def _seed_project(
-    manager: StateManager, *, name: str = "Demo"
-) -> tuple[Project, Artifact, Task]:
+def _seed_project(manager: StateManager, *, name: str = "Demo") -> tuple[Project, Artifact, Task]:
     project = manager.create_project(Project(name=name))
     artifact = Artifact(
         project_id=project.id,
@@ -109,9 +107,7 @@ def test_restore_checkpoint_reverts_project_state(backend: SQLiteBackend) -> Non
     assert any(label.startswith("auto-backup-") for label in checkpoint_labels)
 
 
-def test_secure_gateway_allows_local_provider(
-    tmp_path: Path, backend: SQLiteBackend
-) -> None:
+def test_secure_gateway_allows_local_provider(tmp_path: Path, backend: SQLiteBackend) -> None:
     manager = StateManager(backend)
     manager.attach_psmp_engine(_PassthroughPSMP(manager))
     auditor = ComplianceAuditor(log_dir=tmp_path)
@@ -136,9 +132,7 @@ def test_secure_gateway_allows_local_provider(
     assert stored.id == artifact.id
 
 
-def test_secure_gateway_blocks_disallowed_provider(
-    tmp_path: Path, backend: SQLiteBackend
-) -> None:
+def test_secure_gateway_blocks_disallowed_provider(tmp_path: Path, backend: SQLiteBackend) -> None:
     manager = StateManager(backend)
     manager.attach_psmp_engine(_PassthroughPSMP(manager))
     auditor = ComplianceAuditor(log_dir=tmp_path)

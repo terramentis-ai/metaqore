@@ -64,9 +64,7 @@ def test_gateway_worker_run_once_processes_batches() -> None:
     def _processor(batch):
         processed_batches.append(batch.batch_id)
 
-    worker = GatewayWorker(
-        queue=queue, scheduler=scheduler, processor=_processor, max_dequeue=10
-    )
+    worker = GatewayWorker(queue=queue, scheduler=scheduler, processor=_processor, max_dequeue=10)
 
     for idx in range(3):
         queue.enqueue(

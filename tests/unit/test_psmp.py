@@ -45,9 +45,7 @@ class FakeStateManager:
             self.conflicts[conflict.id] = conflict
 
 
-def _make_artifact(
-    project: Project, *, version: int = 1, created_by: str = "agent"
-) -> Artifact:
+def _make_artifact(project: Project, *, version: int = 1, created_by: str = "agent") -> Artifact:
     return Artifact(
         project_id=project.id,
         artifact_type="spec",
@@ -162,9 +160,7 @@ def test_circular_dependency_conflict(psmp_engine: PSMPEngine):
 
 def test_get_blocking_report_lists_blocked_artifacts(psmp_engine: PSMPEngine):
     project = psmp_engine.state_manager.project
-    conflict = Conflict(
-        artifact_id="art_blocked", project_id=project.id, description="Blocked"
-    )
+    conflict = Conflict(artifact_id="art_blocked", project_id=project.id, description="Blocked")
     blocked_artifact = Artifact(
         id="art_blocked",
         project_id=project.id,

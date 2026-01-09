@@ -33,9 +33,7 @@ def test_websocket_receives_emitted_event(tmp_path) -> None:
     with client.websocket_connect("/ws/stream") as websocket:
         import json
 
-        websocket.send_text(
-            json.dumps({"action": "subscribe", "event_types": ["compliance.*"]})
-        )
+        websocket.send_text(json.dumps({"action": "subscribe", "event_types": ["compliance.*"]}))
         ack = websocket.receive_json()
         assert ack["action"] == "subscribed"
         assert ack["event_types"] == ["compliance.*"]
@@ -49,9 +47,9 @@ def test_websocket_receives_emitted_event(tmp_path) -> None:
 def test_conflict_events_stream_to_websocket(tmp_path) -> None:
     """Test artifact conflict detection triggers events (API integration test)."""
     client = _build_test_client(tmp_path)
-    project_id = client.post(
-        "/api/v1/projects", json={"name": "Streamed Project"}
-    ).json()["data"]["id"]
+    project_id = client.post("/api/v1/projects", json={"name": "Streamed Project"}).json()["data"][
+        "id"
+    ]
     artifact_payload = {
         "project_id": project_id,
         "artifact_type": "plan",

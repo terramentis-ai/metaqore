@@ -129,16 +129,10 @@ class SecureGateway:
         agent_lower = agent_name.lower()
 
         if is_security_task:
-            return (
-                TaskSensitivity.CRITICAL
-                if has_sensitive_data
-                else TaskSensitivity.SENSITIVE
-            )
+            return TaskSensitivity.CRITICAL if has_sensitive_data else TaskSensitivity.SENSITIVE
         if has_sensitive_data or has_private_data:
             return TaskSensitivity.SENSITIVE
-        if any(
-            keyword in task_type_lower for keyword in ("plan", "state", "governance")
-        ):
+        if any(keyword in task_type_lower for keyword in ("plan", "state", "governance")):
             return TaskSensitivity.INTERNAL
         if agent_lower.endswith("validator") or "validator" in agent_lower:
             return TaskSensitivity.INTERNAL
@@ -152,9 +146,7 @@ class SecureGateway:
     def get_recommended_provider(self, sensitivity: TaskSensitivity) -> Optional[str]:
         """Return the best currently-available provider for the sensitivity level."""
 
-        provider = self.policy.get_recommended_provider(
-            sensitivity, self.provider_status
-        )
+        provider = self.policy.get_recommended_provider(sensitivity, self.provider_status)
         self._log_routing_decision(
             agent_name="auto",
             task_type="recommendation",
@@ -357,9 +349,7 @@ def resolve_routing_policy(policy: Optional[str | RoutingPolicy]) -> RoutingPoli
     policy_cls = POLICY_REGISTRY.get(canonical)
     if policy_cls is None:
         known = ", ".join(sorted(POLICY_REGISTRY.keys()))
-        raise ValueError(
-            f"Unknown secure gateway policy '{policy}'. Known policies: {known}"
-        )
+        raise ValueError(f"Unknown secure gateway policy '{policy}'. Known policies: {known}")
     return policy_cls()
 
 

@@ -62,9 +62,7 @@ class WebhookDispatcher:
     def register_endpoint(self, endpoint: WebhookEndpoint) -> None:
         """Register a webhook endpoint."""
         self._endpoints[endpoint.webhook_id] = endpoint
-        logger.info(
-            "Registered webhook endpoint %s: %s", endpoint.webhook_id, endpoint.url
-        )
+        logger.info("Registered webhook endpoint %s: %s", endpoint.webhook_id, endpoint.url)
 
     def unregister_endpoint(self, webhook_id: str) -> None:
         """Unregister a webhook endpoint."""
@@ -75,9 +73,7 @@ class WebhookDispatcher:
         """Dispatch an event to all matching webhook endpoints."""
         results = {}
         if not self._client:
-            logger.warning(
-                "Webhook dispatcher not initialized (use async context manager)"
-            )
+            logger.warning("Webhook dispatcher not initialized (use async context manager)")
             return results
 
         for webhook_id, endpoint in self._endpoints.items():
@@ -137,18 +133,13 @@ class WebhookDispatcher:
                 if attempt < endpoint.retries - 1:
                     await asyncio.sleep(2**attempt)  # Exponential backoff
 
-        logger.error(
-            "Webhook %s failed after %d retries", endpoint.webhook_id, endpoint.retries
-        )
+        logger.error("Webhook %s failed after %d retries", endpoint.webhook_id, endpoint.retries)
         return False
 
     @staticmethod
     def _compute_signature(payload: str, secret: str) -> str:
         """Compute HMAC-SHA256 signature for webhook payload."""
-        return (
-            "sha256="
-            + hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
-        )
+        return "sha256=" + hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
 
 
 # Global dispatcher instance

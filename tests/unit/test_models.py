@@ -20,14 +20,10 @@ from metaqore.core.models import (
 def test_artifact_blocking_state_tracks_conflicts() -> None:
     conflict_open = Conflict(artifact_id="art", project_id="proj", description="Issue")
     conflict_open.resolved = False
-    conflict_closed = Conflict(
-        artifact_id="art", project_id="proj", description="Resolved"
-    )
+    conflict_closed = Conflict(artifact_id="art", project_id="proj", description="Resolved")
     conflict_closed.mark_resolved(conflict_closed.resolution_strategy)
 
-    artifact = Artifact(
-        project_id="proj", artifact_type="spec", data={}, created_by="agent"
-    )
+    artifact = Artifact(project_id="proj", artifact_type="spec", data={}, created_by="agent")
     artifact.add_conflict(conflict_open)
     artifact.add_conflict(conflict_closed)
 
@@ -52,9 +48,7 @@ def test_project_add_helpers_update_timestamps() -> None:
     project = Project(name="Demo")
     initial_updated = project.updated_at
 
-    artifact = Artifact(
-        project_id=project.id, artifact_type="spec", data={}, created_by="agent"
-    )
+    artifact = Artifact(project_id=project.id, artifact_type="spec", data={}, created_by="agent")
     task = Task(project_id=project.id, title="Draft plan")
 
     project.add_artifact(artifact)
@@ -80,9 +74,7 @@ def test_blocking_report_collects_unresolved_conflicts() -> None:
         project_id=project.id, artifact_type="spec", data={}, created_by="agent"
     )
 
-    report = BlockingReport.from_artifacts(
-        project.id, [blocked_artifact, clean_artifact]
-    )
+    report = BlockingReport.from_artifacts(project.id, [blocked_artifact, clean_artifact])
 
     assert report.project_id == project.id
     assert report.blocked_artifacts == ["art"]
@@ -91,9 +83,7 @@ def test_blocking_report_collects_unresolved_conflicts() -> None:
 
 
 def test_artifact_provenance_records_entries() -> None:
-    artifact = Artifact(
-        project_id="proj", artifact_type="spec", data={}, created_by="agent"
-    )
+    artifact = Artifact(project_id="proj", artifact_type="spec", data={}, created_by="agent")
     assert artifact.provenance == []
 
     provenance = Provenance(artifact_id=artifact.id, actor="agent", action="create")

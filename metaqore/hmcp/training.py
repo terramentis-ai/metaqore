@@ -63,9 +63,7 @@ class MOPDTrainingLoop:
             "teacher_count": teacher_count,
         }
         success = functional_accuracy >= 0.9 and kl_divergence <= 0.15
-        return TrainingOutcome(
-            success=success, epochs=epochs, metrics=metrics, notes=notes
-        )
+        return TrainingOutcome(success=success, epochs=epochs, metrics=metrics, notes=notes)
 
 
 __all__ = ["MOPDTrainingLoop", "TrainingOutcome"]

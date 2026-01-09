@@ -61,9 +61,7 @@ class ComplianceAuditor:
         self._buffer_event(event)
         self._emit_streaming_event("compliance.routing_decision", decision)
 
-    def log_veto_event(
-        self, veto: VetoReason, context: Optional[Dict[str, Any]] = None
-    ) -> None:
+    def log_veto_event(self, veto: VetoReason, context: Optional[Dict[str, Any]] = None) -> None:
         """Record a veto event (policy enforcement failure)."""
 
         payload: Dict[str, Any] = {"veto": veto.model_dump()}
@@ -82,12 +80,9 @@ class ComplianceAuditor:
             with self.log_file.open("a", encoding="utf-8") as handle:
                 for event in self._buffer:
                     handle.write(
-                        json.dumps(event.to_dict(), default=self._default_serializer)
-                        + "\n"
+                        json.dumps(event.to_dict(), default=self._default_serializer) + "\n"
                     )
-            logger.debug(
-                "Flushed %s audit events to %s", len(self._buffer), self.log_file
-            )
+            logger.debug("Flushed %s audit events to %s", len(self._buffer), self.log_file)
         finally:
             self._buffer.clear()
 
@@ -99,9 +94,7 @@ class ComplianceAuditor:
     # ------------------------------------------------------------------
     # Query helpers
     # ------------------------------------------------------------------
-    def get_audit_trail(
-        self, filters: Optional[Dict[str, Any]] = None
-    ) -> List[Dict[str, Any]]:
+    def get_audit_trail(self, filters: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         """Return all audit events filtered by the supplied criteria."""
 
         self.flush()
@@ -117,9 +110,7 @@ class ComplianceAuditor:
 
         return [event for event in events if _matches(event)]
 
-    def get_compliance_report(
-        self, organization: Optional[str] = None
-    ) -> Dict[str, Any]:
+    def get_compliance_report(self, organization: Optional[str] = None) -> Dict[str, Any]:
         """Aggregate audit events into a simple compliance summary."""
 
         org = organization or self.organization
@@ -240,9 +231,7 @@ def format_compliance_report(report: Dict[str, Any]) -> str:
         if not data:
             lines.append("  (none)")
         else:
-            for key, value in sorted(
-                data.items(), key=lambda item: (-item[1], item[0])
-            ):
+            for key, value in sorted(data.items(), key=lambda item: (-item[1], item[0])):
                 lines.append(f"  - {key}: {value}")
         lines.append("")
 

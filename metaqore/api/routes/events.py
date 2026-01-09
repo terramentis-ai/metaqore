@@ -37,9 +37,7 @@ class StreamResponse(ResponseMetadata):
 
 
 @router.websocket("/ws")
-async def websocket_endpoint(
-    websocket: WebSocket, project_id: str | None = None
-) -> None:
+async def websocket_endpoint(websocket: WebSocket, project_id: str | None = None) -> None:
     """
     WebSocket endpoint for real-time event streaming.
 
@@ -78,12 +76,8 @@ async def websocket_endpoint(
 
             if action == "subscribe":
                 event_types = data.get("event_types", ["*"])
-                project_ids = data.get(
-                    "project_ids", [project_id] if project_id else []
-                )
-                await manager.subscribe(
-                    websocket, event_types=event_types, project_ids=project_ids
-                )
+                project_ids = data.get("project_ids", [project_id] if project_id else [])
+                await manager.subscribe(websocket, event_types=event_types, project_ids=project_ids)
 
                 await websocket.send_json(
                     {
@@ -102,9 +96,7 @@ async def websocket_endpoint(
 @router.get(
     "/metrics",
     summary="Prometheus metrics endpoint",
-    responses={
-        200: {"content": {"text/plain": {"example": "metaqore_events_total 42"}}}
-    },
+    responses={200: {"content": {"text/plain": {"example": "metaqore_events_total 42"}}}},
     response_class=Response,
 )
 async def get_metrics() -> Response:
@@ -125,9 +117,7 @@ async def get_metrics() -> Response:
     # Update active connection gauge
     aggregator.set_active_connections(manager.get_connection_count())
 
-    return Response(
-        content=generate_prometheus_metrics(), media_type="text/plain; charset=utf-8"
-    )
+    return Response(content=generate_prometheus_metrics(), media_type="text/plain; charset=utf-8")
 
 
 @router.get(

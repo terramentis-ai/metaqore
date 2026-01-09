@@ -137,16 +137,10 @@ class SQLiteBackend(StorageBackend):
 
     def delete_project(self, project_id: str) -> None:
         with Session(self.engine) as session:
-            session.execute(
-                delete(ArtifactTable).where(ArtifactTable.project_id == project_id)
-            )
+            session.execute(delete(ArtifactTable).where(ArtifactTable.project_id == project_id))
             session.execute(delete(TaskTable).where(TaskTable.project_id == project_id))
-            session.execute(
-                delete(ConflictTable).where(ConflictTable.project_id == project_id)
-            )
-            session.execute(
-                delete(CheckpointTable).where(CheckpointTable.project_id == project_id)
-            )
+            session.execute(delete(ConflictTable).where(ConflictTable.project_id == project_id))
+            session.execute(delete(CheckpointTable).where(CheckpointTable.project_id == project_id))
             row = session.get(ProjectTable, project_id)
             if row:
                 session.delete(row)

@@ -38,9 +38,7 @@ class PromptAssemblyEngine:
         *,
         metadata: Optional[Dict[str, object]] = None,
     ) -> None:
-        profile = PromptProfile(
-            name=agent_name, template=template, metadata=metadata or {}
-        )
+        profile = PromptProfile(name=agent_name, template=template, metadata=metadata or {})
         self._profiles[agent_name] = profile
 
     def has_profile(self, agent_name: str) -> bool:
@@ -60,9 +58,7 @@ class PromptAssemblyEngine:
         prompt = profile.template.format(task_context=task_context)
         metadata = {**profile.metadata, **(overrides or {})}
         profile_hash = self._hash_profile(profile.template, metadata)
-        return PromptAssemblyResult(
-            prompt=prompt, profile_hash=profile_hash, metadata=metadata
-        )
+        return PromptAssemblyResult(prompt=prompt, profile_hash=profile_hash, metadata=metadata)
 
     @staticmethod
     def _hash_profile(template: str, metadata: Dict[str, object]) -> str:
