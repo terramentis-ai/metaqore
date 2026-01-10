@@ -7,7 +7,8 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
 
 from metaqore.logger import get_logger
-from metaqore.mock_llm import MockLLMClient
+from metaqore.llm.client.factory import LLMClientFactory
+from metaqore.llm.client.interface import LLMProvider
 
 from .engine import PromptAssemblyEngine
 from .queue import GatewayJob, GatewayQueue
@@ -64,7 +65,8 @@ class GatewayWorker:
         poll_interval: float = 0.25,
         max_dequeue: int = 32,
         prompt_engine: Optional[PromptAssemblyEngine] = None,
-        llm_client: Optional[MockLLMClient] = None,
+        llm_factory: Optional[LLMClientFactory] = None,
+        secure_gateway=None,
         result_handler: Optional[Callable[[GatewayJobResult], None]] = None,
     ) -> None:
         if max_dequeue <= 0:
@@ -75,7 +77,8 @@ class GatewayWorker:
         self._poll_interval = poll_interval
         self._max_dequeue = max_dequeue
         self._prompt_engine = prompt_engine or PromptAssemblyEngine()
-        self._llm_client = llm_client or MockLLMClient(latency_range=(0, 0))
+        self._llm_factory = llm_factory or LLMClientFactory()
+        self._secure_gateway = secure_gateway
         self._result_handler = result_handler
         self._stop_event = threading.Event()
         self._thread: Optional[threading.Thread] = None
@@ -131,7 +134,8 @@ class GatewayWorker:
                 task_context,
                 overrides=agent_metadata,
             )
-            response = self._llm_client.generate(
+            llm_client = self._llm_factory.get_client(LLMProvider.MOCK)
+            response = llm_client.generate(
                 prompt.prompt,
                 agent_name=agent_name,
                 metadata={**agent_metadata, "job_id": job.job_id},

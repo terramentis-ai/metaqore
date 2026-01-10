@@ -27,5 +27,5 @@ repos:
         language: system
         types: [python]
         pass_filenames: false
-        always_run: true
+        always_run: false
         stages: [pre-push]

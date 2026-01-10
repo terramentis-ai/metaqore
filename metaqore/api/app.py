@@ -21,6 +21,7 @@ from metaqore.hmcp import ChainingOrchestrator, HMCPService
 from metaqore.logger import configure_logging, get_logger
 from metaqore.storage.backends.postgres import PostgreSQLBackend
 from metaqore.storage.backends.sqlite import SQLiteBackend
+from metaqore.llm.bootstrap import bootstrap_llm_system
 from metaqore.streaming.hub import get_event_hub
 
 logger = get_logger(__name__)
@@ -42,7 +43,7 @@ def _create_state_layer(
         backend = SQLiteBackend(config.storage_dsn)
     else:
         raise ValueError(f"Unsupported storage backend: {config.storage_backend}")
-    
+
     state_manager = StateManager(backend=backend)
     psmp_engine = PSMPEngine(state_manager=state_manager, config=config)
     state_manager.attach_psmp_engine(psmp_engine)
@@ -62,6 +63,10 @@ async def lifespan(app: FastAPI):
         logger.info("StreamingEventHub bound to main event loop")
     except RuntimeError:
         logger.warning("Could not bind StreamingEventHub to event loop (no running loop)")
+
+    # Bootstrap LLM system
+    bootstrap_llm_system()
+    logger.info("LLM adapter system bootstrapped")
 
     yield
 

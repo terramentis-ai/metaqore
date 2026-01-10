@@ -26,7 +26,10 @@ def test_create_api_app_respects_secure_gateway_policy() -> None:
 
 
 def test_health_endpoint_returns_success_payload() -> None:
-    app = create_api_app()
+    from metaqore.config import MetaQoreConfig
+
+    config = MetaQoreConfig(enable_rate_limit=False, max_parallel_branches=1)
+    app = create_api_app(config)
     client = TestClient(app)
 
     response = client.get("/api/v1/health")

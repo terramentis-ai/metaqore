@@ -47,14 +47,23 @@ class MetaQoreConfig(BaseSettings):
         default="Authorization",
         description="Header to inspect for API key bearer token.",
     )
-    enable_rate_limit: bool = Field(
-        default=True, description="Enable simple in-memory rate limiting."
+    jwt_secret_key: Optional[str] = Field(
+        default=None,
+        description="Secret key for JWT token verification. Enables JWT auth when set.",
     )
+    jwt_algorithm: str = Field(
+        default="HS256",
+        description="Algorithm for JWT signing/verification.",
+    )
+    enable_rate_limit: bool = Field(default=True, description="Enable rate limiting.")
     rate_limit_per_minute: int = Field(
         default=120, ge=1, description="Requests allowed per minute per client"
     )
     rate_limit_burst: int = Field(
         default=240, ge=1, description="Burst ceiling within the same window"
+    )
+    redis_url: str = Field(
+        default="redis://localhost:6379/0", description="Redis URL for distributed rate limiting."
     )
     privileged_token: Optional[str] = Field(
         default=None,

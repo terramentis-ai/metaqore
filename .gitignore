@@ -85,5 +85,8 @@ docs/
 scripts/
 
 # Internal task tracking (commit manually if needed)
-# TODO_UPDATED.md
 # PROGRESS.md
+
+.nx/installation
+.nx/cache
+.nx/workspace-data

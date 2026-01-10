@@ -17,6 +17,7 @@ def _build_test_client(tmp_path: Path) -> TestClient:
         governance_mode=GovernanceMode.PLAYGROUND,
         storage_dsn=f"sqlite:///{db_path}",
         max_parallel_branches=2,
+        enable_rate_limit=False,
     )
     app = create_api_app(config)
     return TestClient(app)

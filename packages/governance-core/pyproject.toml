@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "metaqore-governance-core"
+version = "0.1.0"
+description = "Shared governance core for MetaQore services"
+authors = [
+    {name = "MetaQore Team", email = "team@metaqore.ai"}
+]
+dependencies = [
+    "pydantic>=2.0.0",
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.12.0",
+    "redis>=5.0.0",
+    "python-jose[cryptography]>=3.3.0",
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0"
+]
+requires-python = ">=3.11"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+    "mypy>=1.5.0"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"

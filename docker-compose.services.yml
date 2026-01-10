@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  # Governance Core (shared library, not a service)
+  # Note: governance-core is a library used by other services
+
+  specialist-foundry:
+    build:
+      context: ./packages/specialist-foundry
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8000"
+    environment:
+      - SERVICE_NAME=specialist-foundry
+      - EVENT_BUS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    networks:
+      - metaqore-network
+    restart: unless-stopped
+
+  ai-gateway:
+    build:
+      context: ./packages/ai-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8000"
+    environment:
+      - SERVICE_NAME=ai-gateway
+      - EVENT_BUS_URL=redis://redis:6379
+      - SPECIALIST_FOUNDRY_URL=http://specialist-foundry:8000
+    depends_on:
+      - redis
+      - specialist-foundry
+    networks:
+      - metaqore-network
+    restart: unless-stopped
+
+  compliance-auditor:
+    build:
+      context: ./packages/compliance-auditor
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8000"
+    environment:
+      - SERVICE_NAME=compliance-auditor
+      - EVENT_BUS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    networks:
+      - metaqore-network
+    restart: unless-stopped
+
+  ai-devops:
+    build:
+      context: ./packages/ai-devops
+      dockerfile: Dockerfile
+    ports:
+      - "8004:8000"
+    environment:
+      - SERVICE_NAME=ai-devops
+      - EVENT_BUS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    networks:
+      - metaqore-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - metaqore-network
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+  # Optional: PostgreSQL for state persistence
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: metaqore
+      POSTGRES_USER: metaqore
+      POSTGRES_PASSWORD: metaqore123
+    ports:
+      - "5432:5432"
+    networks:
+      - metaqore-network
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+networks:
+  metaqore-network:
+    driver: bridge
+
+volumes:
+  redis_data:
+  postgres_data:

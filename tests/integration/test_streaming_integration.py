@@ -20,6 +20,7 @@ def _build_test_client(tmp_path: Path) -> TestClient:
     config = MetaQoreConfig(
         governance_mode=GovernanceMode.PLAYGROUND,
         storage_dsn=f"sqlite:///{db_path}",
+        enable_rate_limit=False,
     )
     app = create_api_app(config)
     return TestClient(app)

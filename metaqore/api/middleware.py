@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import time
 from collections import deque
 from typing import Deque, Dict, Optional
@@ -77,17 +78,21 @@ class PrivilegedClientMiddleware(BaseHTTPMiddleware):
 
 
 class APIKeyAuthMiddleware(BaseHTTPMiddleware):
-    """Simple API-key guard for all API routes."""
+    """Simple API-key or JWT guard for all API routes."""
 
     def __init__(
         self,
         app: ASGIApp,
         *,
         api_key: Optional[str],
+        jwt_secret_key: Optional[str],
+        jwt_algorithm: str = "HS256",
         header_name: str = "Authorization",
     ) -> None:
         super().__init__(app)
         self._api_key = api_key
+        self._jwt_secret_key = jwt_secret_key
+        self._jwt_algorithm = jwt_algorithm
         self._header_name = header_name
 
     def _extract_token(self, request: Request) -> Optional[str]:
@@ -96,24 +101,49 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
             return header_value.split(" ", 1)[1]
         return header_value or request.headers.get("X-API-Key")
 
+    def _verify_jwt(self, token: str) -> bool:
+        """Verify JWT token if JWT is enabled."""
+        if not self._jwt_secret_key:
+            return False
+        try:
+            from jose import jwt
+
+            jwt.decode(token, self._jwt_secret_key, algorithms=[self._jwt_algorithm])
+            return True
+        except Exception:
+            return False
+
     async def dispatch(self, request: Request, call_next):  # type: ignore[override]
-        if not self._api_key:
+        if not self._api_key and not self._jwt_secret_key:
             return await call_next(request)
         if not request.url.path.startswith("/api/"):
             return await call_next(request)
 
         token = self._extract_token(request)
-        if token != self._api_key:
+        if not token:
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                content={"detail": "Unauthorized"},
+                content={"detail": "Authorization required"},
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        return await call_next(request)
+
+        # Check API key first
+        if self._api_key and token == self._api_key:
+            return await call_next(request)
+
+        # Check JWT
+        if self._verify_jwt(token):
+            return await call_next(request)
+
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"detail": "Invalid token"},
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Naive in-memory rate limiter keyed by API key or client IP."""
+    """Redis-backed token bucket rate limiter for distributed rate limiting."""
 
     def __init__(
         self,
@@ -122,37 +152,68 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         enabled: bool,
         per_minute: int,
         burst: int,
+        redis_url: str,
     ) -> None:
         super().__init__(app)
         self._enabled = enabled
         self._per_minute = per_minute
         self._burst = burst
-        self._window = 60.0
-        self._buckets: Dict[str, Deque[float]] = {}
+        self._redis_url = redis_url
+        self._redis: Optional[redis.Redis] = None
+        self._lock = asyncio.Lock()
+
+    async def _get_redis(self) -> redis.Redis:
+        """Lazy initialize Redis client."""
+        if self._redis is None:
+            import redis.asyncio as redis
+
+            self._redis = redis.from_url(self._redis_url)
+        return self._redis
 
     def _key(self, request: Request) -> str:
         auth = request.headers.get("Authorization") or request.headers.get("X-API-Key")
         return auth or (request.client.host if request.client else "anonymous")
 
+    async def _consume_token(self, key: str) -> bool:
+        """Consume a token from Redis-based bucket."""
+        redis_client = await self._get_redis()
+        now = time.time()
+        window_start = now - 60.0  # 1 minute window
+
+        # Use Redis sorted set to track timestamps
+        bucket_key = f"ratelimit:{key}"
+
+        # Remove old entries
+        await redis_client.zremrangebyscore(bucket_key, 0, window_start)
+
+        # Check current count
+        count = await redis_client.zcard(bucket_key)
+        if count >= self._burst:
+            return False
+
+        # Add new timestamp
+        await redis_client.zadd(bucket_key, {str(now): now})
+
+        # Set expiration to clean up
+        await redis_client.expire(bucket_key, 60)
+
+        return True
+
     async def dispatch(self, request: Request, call_next):  # type: ignore[override]
         if not self._enabled or not request.url.path.startswith("/api/"):
             return await call_next(request)
 
-        now = time.time()
-        window_start = now - self._window
         key = self._key(request)
-        bucket = self._buckets.setdefault(key, deque())
 
-        while bucket and bucket[0] < window_start:
-            bucket.popleft()
+        async with self._lock:
+            allowed = await self._consume_token(key)
 
-        if len(bucket) >= max(self._per_minute, self._burst):
+        if not allowed:
             return JSONResponse(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 content={"detail": "Rate limit exceeded"},
             )
 
-        bucket.append(now)
         return await call_next(request)
 
 
@@ -172,6 +233,8 @@ def register_middlewares(
     app.add_middleware(
         APIKeyAuthMiddleware,
         api_key=config.api_key,
+        jwt_secret_key=config.jwt_secret_key,
+        jwt_algorithm=config.jwt_algorithm,
         header_name=config.api_key_header,
     )
     app.add_middleware(
@@ -179,6 +242,7 @@ def register_middlewares(
         enabled=config.enable_rate_limit,
         per_minute=config.rate_limit_per_minute,
         burst=config.rate_limit_burst,
+        redis_url=config.redis_url,
     )
     app.add_middleware(RequestContextMiddleware)
     app.add_middleware(GovernanceEnforcementMiddleware, config=config)

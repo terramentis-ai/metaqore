@@ -1,0 +1,34 @@
+{
+  "$schema": "./node_modules/nx/schemas/workspace-schema.json",
+  "npmScope": "metaqore",
+  "affected": {
+    "defaultBase": "main"
+  },
+  "projects": {
+    "governance-core": {
+      "root": "packages/governance-core",
+      "sourceRoot": "packages/governance-core/src",
+      "projectType": "library"
+    },
+    "specialist-foundry": {
+      "root": "packages/specialist-foundry",
+      "sourceRoot": "packages/specialist-foundry/src",
+      "projectType": "application"
+    },
+    "ai-gateway": {
+      "root": "packages/ai-gateway",
+      "sourceRoot": "packages/ai-gateway/src",
+      "projectType": "application"
+    },
+    "compliance-auditor": {
+      "root": "packages/compliance-auditor",
+      "sourceRoot": "packages/compliance-auditor/src",
+      "projectType": "application"
+    },
+    "ai-devops": {
+      "root": "packages/ai-devops",
+      "sourceRoot": "packages/ai-devops/src",
+      "projectType": "application"
+    }
+  }
+}

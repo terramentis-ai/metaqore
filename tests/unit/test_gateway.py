@@ -90,7 +90,9 @@ def test_gateway_worker_executes_jobs_with_prompt_engine_and_llm() -> None:
     scheduler = CacheAwareBatchScheduler(max_batch_tokens=4096)
     prompt_engine = PromptAssemblyEngine()
     prompt_engine.register_profile("clean_akkadian_dates", template="{task_context}")
-    llm_client = MockLLMClient(latency_range=(0, 0))
+    from metaqore.llm.client.factory import LLMClientFactory
+
+    llm_factory = LLMClientFactory()
 
     captured_results = []
 
@@ -99,7 +101,7 @@ def test_gateway_worker_executes_jobs_with_prompt_engine_and_llm() -> None:
         scheduler=scheduler,
         processor=lambda _: None,
         prompt_engine=prompt_engine,
-        llm_client=llm_client,
+        llm_factory=llm_factory,
         result_handler=captured_results.append,
     )
 

@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "metaqore-monorepo"
+version = "0.1.0"
+description = "MetaQore monorepo with governance-core and services"
+authors = [
+    {name = "MetaQore Team", email = "team@metaqore.ai"}
+]
+requires-python = ">=3.11"
+
+[tool.setuptools.packages.find]
+where = ["packages"]
+
+[tool.nx]
+npmScope = "metaqore"
+affected = { defaultBase = "main" }
+
+[[tool.nx.projects]]
+name = "governance-core"
+root = "packages/governance-core"
+sourceRoot = "packages/governance-core/src"
+
+[[tool.nx.projects]]
+name = "specialist-foundry"
+root = "packages/specialist-foundry"
+sourceRoot = "packages/specialist-foundry/src"
+
+[[tool.nx.projects]]
+name = "ai-gateway"
+root = "packages/ai-gateway"
+sourceRoot = "packages/ai-gateway/src"
+
+[[tool.nx.projects]]
+name = "compliance-auditor"
+root = "packages/compliance-auditor"
+sourceRoot = "packages/compliance-auditor/src"
+
+[[tool.nx.projects]]
+name = "ai-devops"
+root = "packages/ai-devops"
+sourceRoot = "packages/ai-devops/src"
