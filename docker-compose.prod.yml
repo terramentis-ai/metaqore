@@ -1,0 +1,224 @@
+version: '3.8'
+
+services:
+  specialist-foundry:
+    environment:
+      - LOG_LEVEL=INFO
+      - TRAINING_TIMEOUT=7200
+      - MAX_WORKERS=4
+      - REDIS_CACHE_URL=redis://redis:6379/1
+      - DATABASE_URL=postgresql://metaqore:metaqore123@postgres:5432/metaqore
+      # Production secrets (use docker secrets in real deployment)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  ai-gateway:
+    environment:
+      - LOG_LEVEL=INFO
+      - CACHE_TTL=3600
+      - MAX_CONCURRENT_REQUESTS=100
+      - REDIS_CACHE_URL=redis://redis:6379/1
+      - DATABASE_URL=postgresql://metaqore:metaqore123@postgres:5432/metaqore
+      # Production secrets
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - VLLM_BASE_URL=${VLLM_BASE_URL}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 8G
+        reservations:
+          cpus: '2.0'
+          memory: 4G
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  compliance-auditor:
+    environment:
+      - LOG_LEVEL=INFO
+      - AUDIT_RETENTION_DAYS=2555
+      - COMPLIANCE_CHECK_INTERVAL=86400
+      - REDIS_CACHE_URL=redis://redis:6379/1
+      - DATABASE_URL=postgresql://metaqore:metaqore123@postgres:5432/metaqore
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  ai-devops:
+    environment:
+      - LOG_LEVEL=INFO
+      - MONITORING_INTERVAL=60
+      - AUTO_SCALE_ENABLED=true
+      - REDIS_CACHE_URL=redis://redis:6379/1
+      - DATABASE_URL=postgresql://metaqore:metaqore123@postgres:5432/metaqore
+      - KUBECONFIG=${KUBECONFIG}
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    volumes:
+      - redis_data:/data
+    secrets:
+      - redis_password
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: metaqore
+      POSTGRES_USER: metaqore
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    secrets:
+      - postgres_password
+
+  # Production monitoring stack
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - metaqore-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - metaqore-network
+    restart: unless-stopped
+
+  # Load balancer (nginx)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - ai-gateway
+      - specialist-foundry
+      - compliance-auditor
+      - ai-devops
+    networks:
+      - metaqore-network
+    restart: unless-stopped
+
+secrets:
+  redis_password:
+    file: ./secrets/redis_password.txt
+  postgres_password:
+    file: ./secrets/postgres_password.txt
+
+volumes:
+  redis_data:
+  postgres_data:
+  prometheus_data:
+  grafana_data:
