@@ -23,8 +23,8 @@
 - **Cache-Aware Batch Scheduler**: Groups requests by profile hash to maximize KV cache hits.
 - **Cache-Aware Load Balancer**: Routes to workers with hot caches.
 
-### 4. Model Worker Pool
-- **vLLM/Ollama Worker**: Stateless containers executing inference.
+### 4. Model llama Pool
+- **vLLM/llama-cpp Worker**: Stateless containers executing inference.
 
 ### 5. Response & Audit Backchannel
 - **Audit Logger**: Logs immutable record compatible with MetaQore's audit system.
