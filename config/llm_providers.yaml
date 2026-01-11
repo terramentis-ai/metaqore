@@ -1,0 +1,52 @@
+# MetaQore LLM Providers Configuration
+# Battle Testing Configuration for Ancient Language Translator
+
+providers:
+  # Local Phi-3.5 Model for fast, offline inference
+  phi35_local:
+    provider: llama_cpp
+    config:
+      model_path: "/path/to/your/phi3.5.gguf"  # Update this path to your Phi-3.5 model
+      n_ctx: 4096
+      n_threads: 8
+      n_gpu_layers: 35  # Adjust based on your GPU memory
+      temperature: 0.3
+      max_tokens: 1024
+    models:
+      - phi3.5:latest
+
+  # OpenRouter for cloud-based models and fallback
+  openrouter:
+    provider: openai
+    config:
+      api_key: "${OPENROUTER_API_KEY}"  # Your OpenRouter API key
+      base_url: "https://openrouter.ai/api/v1"  # OpenRouter's OpenAI-compatible endpoint
+      model: "anthropic/claude-3-haiku"  # Default model for translation tasks
+    models:
+      - claude-3-haiku
+      - gpt-4o-mini
+      - gemma2-9b
+
+# Specialist Routing Configuration
+specialists:
+  ancient_translator:
+    name: "Ancient Language Translator"
+    skills: ["translation", "linguistics", "historical-texts"]
+    preferred_providers: ["phi35_local", "openrouter"]
+    fallback_providers: ["openrouter"]
+    performance_targets:
+      accuracy: 0.85
+      latency_ms: 2000
+    training_data:
+      languages: ["latin", "ancient-greek", "sanskrit", "hieroglyphs", "cuneiform"]
+      domains: ["religious-texts", "historical-documents", "literary-works"]
+
+# Governance Policies for Translation Tasks
+policies:
+  translation_tasks:
+    sensitivity: "INTERNAL"
+    audit_required: true
+    compliance_frameworks: ["GDPR", "data-protection"]
+    rate_limits:
+      requests_per_minute: 60
+      tokens_per_minute: 10000
