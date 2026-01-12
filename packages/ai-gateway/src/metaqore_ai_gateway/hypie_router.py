@@ -24,9 +24,8 @@ import httpx
 from metaqore.llm.client.interface import LLMResponse, LLMProvider
 from metaqore.llm.client.factory import LLMClientFactory
 
-from metaqore_governance_core.models import Project, Task, Artifact
-from metaqore_governance_core.psmp import PSMPEngine
-from metaqore_governance_core.audit import ComplianceAuditor
+from metaqore_governance_core.cache import Cache
+from metaqore_governance_core.event_bus import event_bus, Event, EventTypes
 
 logger = logging.getLogger(__name__)
 
@@ -104,11 +103,12 @@ class InferenceResult:
 class HyPIERouter:
     """HyPIE Router: Governance-aware hybrid-parallel inference engine."""
 
-    def __init__(self, psmp_engine: PSMPEngine, hmcp_policy_engine: HierarchicalChainingPolicy, llm_factory: Optional[LLMClientFactory] = None, compliance_auditor: Optional[ComplianceAuditor] = None):
+    def __init__(self, psmp_engine: PSMPEngine, hmcp_policy_engine: HierarchicalChainingPolicy, llm_factory: Optional[LLMClientFactory] = None, compliance_auditor: Optional[ComplianceAuditor] = None, cache: Optional[Cache] = None):
         self.psmp_engine = psmp_engine
         self.hmcp_policy_engine = hmcp_policy_engine
         self.llm_factory = llm_factory or LLMClientFactory()
         self.compliance_auditor = compliance_auditor or ComplianceAuditor()
+        self.cache = cache or Cache.create_in_memory_cache()
 
         # Provider registry with metrics
         self.providers: Dict[ProviderType, Dict[str, Any]] = {}
@@ -131,7 +131,30 @@ class HyPIERouter:
         # Initialize with default providers (to be configured)
         self._initialize_providers()
 
-        logger.info("HyPIE Router initialized with governance, compliance, and production hardening")
+        logger.info("HyPIE Router initialized with governance, compliance, production hardening, and caching")
+
+    async def _get_cached_routing_decision(self, request: InferenceRequest) -> Optional[ProviderType]:
+        """Get cached routing decision for similar requests."""
+        try:
+            # Create cache key based on request characteristics
+            cache_key = f"routing:{hash(request.prompt[:100])}:{request.sensitivity}:{request.routing_policy.__dict__ if request.routing_policy else 'default'}"
+            
+            cached_decision = await self.cache.get(cache_key)
+            if cached_decision:
+                logger.debug(f"Using cached routing decision: {cached_decision}")
+                return ProviderType(cached_decision)
+            return None
+        except Exception as e:
+            logger.warning(f"Failed to get cached routing decision: {e}")
+            return None
+
+    async def _cache_routing_decision(self, request: InferenceRequest, provider: ProviderType, ttl: int = 300):
+        """Cache routing decision for future similar requests."""
+        try:
+            cache_key = f"routing:{hash(request.prompt[:100])}:{request.sensitivity}:{request.routing_policy.__dict__ if request.routing_policy else 'default'}"
+            await self.cache.set(cache_key, provider.value, ttl=ttl)
+        except Exception as e:
+            logger.warning(f"Failed to cache routing decision: {e}")
 
     def _initialize_providers(self):
         """Initialize provider configurations and metrics."""
@@ -367,10 +390,17 @@ class HyPIERouter:
     async def _select_provider(self, request: InferenceRequest, policy: RoutingPolicy, psmp_context: Dict[str, Any]) -> ProviderType:
         """Select the optimal provider based on policy, metrics, and context with specialist routing."""
         
+        # Check cache for similar routing decisions first
+        cached_provider = await self._get_cached_routing_decision(request)
+        if cached_provider:
+            return cached_provider
+        
         # First, check if specialist routing is appropriate
         specialist_provider = await self._evaluate_specialist_routing(request, policy)
         if specialist_provider:
             logger.info(f"HyPIE routing to specialist: {specialist_provider}")
+            # Cache the specialist routing decision
+            await self._cache_routing_decision(request, specialist_provider)
             return specialist_provider
         
         # Fall back to regular provider selection
@@ -402,6 +432,10 @@ class HyPIERouter:
             raise ValueError("No suitable provider found for request")
 
         logger.info(f"HyPIE selected provider: {best_provider} with score {best_score}")
+        
+        # Cache the routing decision for future similar requests
+        await self._cache_routing_decision(request, best_provider)
+        
         return best_provider
 
     async def _evaluate_specialist_routing(self, request: InferenceRequest, policy: RoutingPolicy) -> Optional[ProviderType]:

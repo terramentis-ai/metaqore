@@ -16,6 +16,7 @@ from metaqore_governance_core.hmcp_policy import HierarchicalChainingPolicy
 from metaqore_governance_core.audit import ComplianceAuditor
 
 from metaqore.llm.client.factory import LLMClientFactory
+from metaqore.config import MetaQoreConfig
 
 from .hypie_router import HyPIERouter, InferenceRequest, RoutingPolicy
 
@@ -34,7 +35,9 @@ class LLMRequest(BaseModel):
 class AIGatewayService(EventHandler):
     """AI Gateway service for MetaQore."""
 
-    def __init__(self):
+    def __init__(self, config: Optional[MetaQoreConfig] = None):
+        self.config = config or MetaQoreConfig()
+        
         self.app = FastAPI(title="MetaQore AI Gateway")
         self.secure_gateway = SecureGateway()
         self.http_client = httpx.AsyncClient(timeout=30.0)
@@ -48,10 +51,10 @@ class AIGatewayService(EventHandler):
         self.llm_factory = LLMClientFactory()
 
         # Initialize HyPIE Router
-        self.hypie_router = HyPIERouter(self.psmp_engine, self.hmcp_policy_engine, self.llm_factory, self.compliance_auditor)
+        self.hypie_router = HyPIERouter(self.psmp_engine, self.hmcp_policy_engine, self.llm_factory, self.compliance_auditor, self.cache)
 
         # Initialize cache (Redis in production, in-memory for development)
-        self.cache = Cache.create_in_memory_cache()  # TODO: Configure Redis for production
+        self.cache = self._initialize_cache()
 
         # Specialist routing registry
         self._specialists: Dict[str, Dict[str, Any]] = {}  # skill_id -> specialist config
@@ -60,6 +63,35 @@ class AIGatewayService(EventHandler):
         event_bus.register_handler(EventTypes.SPECIALIST_DEPLOYED, self)
         
         self._setup_routes()
+
+    def _initialize_cache(self) -> Cache:
+        """Initialize cache backend, preferring Redis when available."""
+        try:
+            # Parse Redis URL from config
+            redis_url = self.config.redis_url
+            if redis_url and redis_url.startswith("redis://"):
+                # Parse Redis URL (simple parsing for now)
+                # Format: redis://[password@]host:port/db
+                url_parts = redis_url.replace("redis://", "").split("/")
+                host_port = url_parts[0].split(":")
+                host = host_port[0]
+                port = int(host_port[1]) if len(host_port) > 1 else 6379
+                db = int(url_parts[1]) if len(url_parts) > 1 else 0
+                
+                # Extract password if present
+                password = None
+                if "@" in host:
+                    password, host = host.split("@", 1)
+                
+                logger.info(f"Initializing Redis cache: {host}:{port}/{db}")
+                return Cache.create_redis_cache(host=host, port=port, db=db, password=password)
+            else:
+                logger.warning("Redis URL not configured, using in-memory cache")
+                return Cache.create_in_memory_cache()
+                
+        except Exception as e:
+            logger.warning(f"Failed to initialize Redis cache: {e}, falling back to in-memory cache")
+            return Cache.create_in_memory_cache()
 
     async def handle_event(self, event: Event) -> None:
         """Handle incoming events for specialist lifecycle management."""
