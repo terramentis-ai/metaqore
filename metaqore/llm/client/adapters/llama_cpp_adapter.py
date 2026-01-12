@@ -1,9 +1,21 @@
 """Llama.cpp adapter implementing the LLMClient interface."""
 
 import os
+import time
 from pathlib import Path
 from typing import Any, Dict, Optional
 from metaqore.llm.client.interface import LLMClient, LLMProvider, LLMResponse
+
+# Import governance components for metrics and events
+try:
+    from metaqore_governance_core.event_bus import event_bus, Event, EventTypes
+    from metaqore.metrics.aggregator import get_metrics_aggregator
+except ImportError:
+    # Fallback for when governance-core is not available
+    event_bus = None
+    Event = None
+    EventTypes = None
+    get_metrics_aggregator = lambda: None
 
 
 class LlamaCppAdapter(LLMClient):
@@ -75,6 +87,25 @@ class LlamaCppAdapter(LLMClient):
         """
         if not self._initialized or not self._model:
             raise RuntimeError("LlamaCppAdapter not initialized")
+        
+        start_time = time.time()
+        request_id = metadata.get("request_id", f"req_{int(start_time)}")
+        
+        # Publish request started event
+        if event_bus and Event and EventTypes:
+            event_bus.publish(Event(
+                event_type=EventTypes.LLM_REQUEST_STARTED,
+                source=f"llm_adapter.{self.provider.value}",
+                data={
+                    "request_id": request_id,
+                    "provider": self.provider.value,
+                    "model": self._model_path or "llama-cpp-model",
+                    "agent_name": agent_name,
+                    "prompt_length": len(prompt),
+                    "metadata": metadata,
+                },
+                correlation_id=metadata.get("correlation_id"),
+            ))
 
         # Merge kwargs with default config
         gen_config = {**self._model_config, **kwargs}
@@ -87,6 +118,9 @@ class LlamaCppAdapter(LLMClient):
                 temperature=gen_config.get("temperature", 0.7),
                 echo=False,  # Don't include prompt in response
             )
+
+            end_time = time.time()
+            latency_ms = (end_time - start_time) * 1000
 
             # Extract the generated text
             if isinstance(output, dict) and "choices" in output:
@@ -101,31 +135,109 @@ class LlamaCppAdapter(LLMClient):
                 content = str(output)
                 usage = {}
 
-            return LLMResponse(
+            # Record metrics
+            if get_metrics_aggregator():
+                aggregator = get_metrics_aggregator()
+                aggregator.record_api_latency(f"llm_{self.provider.value}", latency_ms)
+
+            model_name = (
+                self._model.model_path.split("/")[-1]
+                if hasattr(self._model, "model_path") and self._model.model_path
+                else "llama-cpp-model"
+            )
+            
+            # Prepare artifact context
+            artifact_context = self.prepare_artifact_context(
+                LLMResponse(
+                    content=content,
+                    provider=self.provider,
+                    model=model_name,
+                    success=True,
+                    usage=usage,
+                ),
+                metadata
+            )
+            artifact_context.update({
+                "latency_ms": latency_ms,
+                "request_id": request_id,
+                "agent_name": agent_name,
+                "model_path": self._model_path,
+            })
+            
+            llm_response = LLMResponse(
                 content=content,
                 provider=self.provider,
-                model=(
-                    self._model.model_path.split("/")[-1]
-                    if hasattr(self._model, "model_path") and self._model.model_path
-                    else "llama-cpp-model"
-                ),
+                model=model_name,
                 success=True,
                 metadata={
                     "agent": agent_name,
                     "model_path": self._model_path,
                     "generation_config": gen_config,
+                    "latency_ms": latency_ms,
                 },
                 usage=usage,
+                artifact_context=artifact_context,
             )
+            
+            # Publish completion event
+            if event_bus and Event and EventTypes:
+                event_bus.publish(Event(
+                    event_type=EventTypes.LLM_REQUEST_COMPLETED,
+                    source=f"llm_adapter.{self.provider.value}",
+                    data={
+                        "request_id": request_id,
+                        "provider": self.provider.value,
+                        "model": model_name,
+                        "latency_ms": latency_ms,
+                        "tokens_used": usage.get("completion_tokens", 0),
+                        "success": True,
+                        "artifact_context": artifact_context,
+                    },
+                    correlation_id=metadata.get("correlation_id"),
+                ))
+            
+            return llm_response
 
         except Exception as e:
+            end_time = time.time()
+            latency_ms = (end_time - start_time) * 1000
+            
+            # Record failed request metrics
+            if get_metrics_aggregator():
+                aggregator = get_metrics_aggregator()
+                aggregator.record_api_latency(f"llm_{self.provider.value}_failed", latency_ms)
+            
+            # Publish failure event
+            if event_bus and Event and EventTypes:
+                event_bus.publish(Event(
+                    event_type=EventTypes.LLM_REQUEST_FAILED,
+                    source=f"llm_adapter.{self.provider.value}",
+                    data={
+                        "request_id": request_id,
+                        "provider": self.provider.value,
+                        "model": self._model_path or "llama-cpp-model",
+                        "latency_ms": latency_ms,
+                        "error": str(e),
+                        "success": False,
+                    },
+                    correlation_id=metadata.get("correlation_id"),
+                ))
+            
             return LLMResponse(
                 content="",
                 provider=self.provider,
                 model="llama-cpp-model",
                 success=False,
                 error=f"Llama.cpp generation failed: {str(e)}",
-                metadata={"agent": agent_name, "error_details": str(e)},
+                metadata={"agent": agent_name, "error_details": str(e), "latency_ms": latency_ms},
+                artifact_context={
+                    "provider": self.provider.value,
+                    "model": self._model_path or "llama-cpp-model",
+                    "error": str(e),
+                    "latency_ms": latency_ms,
+                    "request_id": request_id,
+                    "timestamp": metadata.get("timestamp"),
+                }
             )
 
     def validate_config(self, config: Dict[str, Any]) -> bool:

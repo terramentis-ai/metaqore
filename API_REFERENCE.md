@@ -1,4 +1,8 @@
+
+
 # MetaQore API Reference
+
+All inference endpoints are routed through HyPIE, MetaQore's hybrid-parallel inference engine, which dynamically selects the optimal backend (local/cloud) based on governance, compliance, and real-time performance. All endpoints, parameters, and behaviors are current as of the latest service-oriented architecture. For canonical conventions, see [.github/copilot-instructions.md](.github/copilot-instructions.md). Implementation and progress validation are logged in [session_logger.md](session_logger.md).
 
 ## Overview
 
