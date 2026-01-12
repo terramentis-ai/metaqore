@@ -87,25 +87,27 @@ class LlamaCppAdapter(LLMClient):
         """
         if not self._initialized or not self._model:
             raise RuntimeError("LlamaCppAdapter not initialized")
-        
+
         start_time = time.time()
         request_id = metadata.get("request_id", f"req_{int(start_time)}")
-        
+
         # Publish request started event
         if event_bus and Event and EventTypes:
-            event_bus.publish(Event(
-                event_type=EventTypes.LLM_REQUEST_STARTED,
-                source=f"llm_adapter.{self.provider.value}",
-                data={
-                    "request_id": request_id,
-                    "provider": self.provider.value,
-                    "model": self._model_path or "llama-cpp-model",
-                    "agent_name": agent_name,
-                    "prompt_length": len(prompt),
-                    "metadata": metadata,
-                },
-                correlation_id=metadata.get("correlation_id"),
-            ))
+            event_bus.publish(
+                Event(
+                    event_type=EventTypes.LLM_REQUEST_STARTED,
+                    source=f"llm_adapter.{self.provider.value}",
+                    data={
+                        "request_id": request_id,
+                        "provider": self.provider.value,
+                        "model": self._model_path or "llama-cpp-model",
+                        "agent_name": agent_name,
+                        "prompt_length": len(prompt),
+                        "metadata": metadata,
+                    },
+                    correlation_id=metadata.get("correlation_id"),
+                )
+            )
 
         # Merge kwargs with default config
         gen_config = {**self._model_config, **kwargs}
@@ -145,7 +147,7 @@ class LlamaCppAdapter(LLMClient):
                 if hasattr(self._model, "model_path") and self._model.model_path
                 else "llama-cpp-model"
             )
-            
+
             # Prepare artifact context
             artifact_context = self.prepare_artifact_context(
                 LLMResponse(
@@ -155,15 +157,17 @@ class LlamaCppAdapter(LLMClient):
                     success=True,
                     usage=usage,
                 ),
-                metadata
+                metadata,
             )
-            artifact_context.update({
-                "latency_ms": latency_ms,
-                "request_id": request_id,
-                "agent_name": agent_name,
-                "model_path": self._model_path,
-            })
-            
+            artifact_context.update(
+                {
+                    "latency_ms": latency_ms,
+                    "request_id": request_id,
+                    "agent_name": agent_name,
+                    "model_path": self._model_path,
+                }
+            )
+
             llm_response = LLMResponse(
                 content=content,
                 provider=self.provider,
@@ -178,51 +182,55 @@ class LlamaCppAdapter(LLMClient):
                 usage=usage,
                 artifact_context=artifact_context,
             )
-            
+
             # Publish completion event
             if event_bus and Event and EventTypes:
-                event_bus.publish(Event(
-                    event_type=EventTypes.LLM_REQUEST_COMPLETED,
-                    source=f"llm_adapter.{self.provider.value}",
-                    data={
-                        "request_id": request_id,
-                        "provider": self.provider.value,
-                        "model": model_name,
-                        "latency_ms": latency_ms,
-                        "tokens_used": usage.get("completion_tokens", 0),
-                        "success": True,
-                        "artifact_context": artifact_context,
-                    },
-                    correlation_id=metadata.get("correlation_id"),
-                ))
-            
+                event_bus.publish(
+                    Event(
+                        event_type=EventTypes.LLM_REQUEST_COMPLETED,
+                        source=f"llm_adapter.{self.provider.value}",
+                        data={
+                            "request_id": request_id,
+                            "provider": self.provider.value,
+                            "model": model_name,
+                            "latency_ms": latency_ms,
+                            "tokens_used": usage.get("completion_tokens", 0),
+                            "success": True,
+                            "artifact_context": artifact_context,
+                        },
+                        correlation_id=metadata.get("correlation_id"),
+                    )
+                )
+
             return llm_response
 
         except Exception as e:
             end_time = time.time()
             latency_ms = (end_time - start_time) * 1000
-            
+
             # Record failed request metrics
             if get_metrics_aggregator():
                 aggregator = get_metrics_aggregator()
                 aggregator.record_api_latency(f"llm_{self.provider.value}_failed", latency_ms)
-            
+
             # Publish failure event
             if event_bus and Event and EventTypes:
-                event_bus.publish(Event(
-                    event_type=EventTypes.LLM_REQUEST_FAILED,
-                    source=f"llm_adapter.{self.provider.value}",
-                    data={
-                        "request_id": request_id,
-                        "provider": self.provider.value,
-                        "model": self._model_path or "llama-cpp-model",
-                        "latency_ms": latency_ms,
-                        "error": str(e),
-                        "success": False,
-                    },
-                    correlation_id=metadata.get("correlation_id"),
-                ))
-            
+                event_bus.publish(
+                    Event(
+                        event_type=EventTypes.LLM_REQUEST_FAILED,
+                        source=f"llm_adapter.{self.provider.value}",
+                        data={
+                            "request_id": request_id,
+                            "provider": self.provider.value,
+                            "model": self._model_path or "llama-cpp-model",
+                            "latency_ms": latency_ms,
+                            "error": str(e),
+                            "success": False,
+                        },
+                        correlation_id=metadata.get("correlation_id"),
+                    )
+                )
+
             return LLMResponse(
                 content="",
                 provider=self.provider,
@@ -237,7 +245,7 @@ class LlamaCppAdapter(LLMClient):
                     "latency_ms": latency_ms,
                     "request_id": request_id,
                     "timestamp": metadata.get("timestamp"),
-                }
+                },
             )
 
     def validate_config(self, config: Dict[str, Any]) -> bool:

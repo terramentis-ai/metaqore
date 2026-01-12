@@ -47,26 +47,28 @@ class AnthropicAdapter(LLMClient):
             raise RuntimeError("AnthropicAdapter not initialized")
         if anthropic is None:
             raise RuntimeError("anthropic library not available")
-        
+
         start_time = time.time()
         request_id = metadata.get("request_id", f"req_{int(start_time)}")
-        
+
         # Publish request started event
         if event_bus and Event and EventTypes:
-            event_bus.publish(Event(
-                event_type=EventTypes.LLM_REQUEST_STARTED,
-                source=f"llm_adapter.{self.provider.value}",
-                data={
-                    "request_id": request_id,
-                    "provider": self.provider.value,
-                    "model": self._model,
-                    "agent_name": agent_name,
-                    "prompt_length": len(prompt),
-                    "metadata": metadata,
-                },
-                correlation_id=metadata.get("correlation_id"),
-            ))
-        
+            event_bus.publish(
+                Event(
+                    event_type=EventTypes.LLM_REQUEST_STARTED,
+                    source=f"llm_adapter.{self.provider.value}",
+                    data={
+                        "request_id": request_id,
+                        "provider": self.provider.value,
+                        "model": self._model,
+                        "agent_name": agent_name,
+                        "prompt_length": len(prompt),
+                        "metadata": metadata,
+                    },
+                    correlation_id=metadata.get("correlation_id"),
+                )
+            )
+
         client = anthropic.Anthropic(api_key=self._api_key)
         try:
             response = client.messages.create(
@@ -75,21 +77,21 @@ class AnthropicAdapter(LLMClient):
                 temperature=kwargs.get("temperature", 0.7),
                 messages=[{"role": "user", "content": prompt}],
             )
-            
+
             end_time = time.time()
             latency_ms = (end_time - start_time) * 1000
-            
+
             content = response.content[0].text
             usage = {
                 "input_tokens": response.usage.input_tokens,
                 "output_tokens": response.usage.output_tokens,
             }
-            
+
             # Record metrics
             if get_metrics_aggregator():
                 aggregator = get_metrics_aggregator()
                 aggregator.record_api_latency(f"llm_{self.provider.value}", latency_ms)
-            
+
             # Prepare artifact context
             artifact_context = self.prepare_artifact_context(
                 LLMResponse(
@@ -99,68 +101,78 @@ class AnthropicAdapter(LLMClient):
                     success=True,
                     usage=usage,
                 ),
-                metadata
+                metadata,
             )
-            artifact_context.update({
-                "latency_ms": latency_ms,
-                "request_id": request_id,
-                "agent_name": agent_name,
-            })
-            
+            artifact_context.update(
+                {
+                    "latency_ms": latency_ms,
+                    "request_id": request_id,
+                    "agent_name": agent_name,
+                }
+            )
+
             llm_response = LLMResponse(
                 content=content,
                 provider=self.provider,
                 model=self._model,
                 success=True,
-                metadata={"agent": agent_name, "generation_config": kwargs, "latency_ms": latency_ms},
+                metadata={
+                    "agent": agent_name,
+                    "generation_config": kwargs,
+                    "latency_ms": latency_ms,
+                },
                 usage=usage,
                 artifact_context=artifact_context,
             )
-            
+
             # Publish completion event
             if event_bus and Event and EventTypes:
-                event_bus.publish(Event(
-                    event_type=EventTypes.LLM_REQUEST_COMPLETED,
-                    source=f"llm_adapter.{self.provider.value}",
-                    data={
-                        "request_id": request_id,
-                        "provider": self.provider.value,
-                        "model": self._model,
-                        "latency_ms": latency_ms,
-                        "tokens_used": usage.get("output_tokens", 0),
-                        "success": True,
-                        "artifact_context": artifact_context,
-                    },
-                    correlation_id=metadata.get("correlation_id"),
-                ))
-            
+                event_bus.publish(
+                    Event(
+                        event_type=EventTypes.LLM_REQUEST_COMPLETED,
+                        source=f"llm_adapter.{self.provider.value}",
+                        data={
+                            "request_id": request_id,
+                            "provider": self.provider.value,
+                            "model": self._model,
+                            "latency_ms": latency_ms,
+                            "tokens_used": usage.get("output_tokens", 0),
+                            "success": True,
+                            "artifact_context": artifact_context,
+                        },
+                        correlation_id=metadata.get("correlation_id"),
+                    )
+                )
+
             return llm_response
-            
+
         except Exception as e:
             end_time = time.time()
             latency_ms = (end_time - start_time) * 1000
-            
+
             # Record failed request metrics
             if get_metrics_aggregator():
                 aggregator = get_metrics_aggregator()
                 aggregator.record_api_latency(f"llm_{self.provider.value}_failed", latency_ms)
-            
+
             # Publish failure event
             if event_bus and Event and EventTypes:
-                event_bus.publish(Event(
-                    event_type=EventTypes.LLM_REQUEST_FAILED,
-                    source=f"llm_adapter.{self.provider.value}",
-                    data={
-                        "request_id": request_id,
-                        "provider": self.provider.value,
-                        "model": self._model,
-                        "latency_ms": latency_ms,
-                        "error": str(e),
-                        "success": False,
-                    },
-                    correlation_id=metadata.get("correlation_id"),
-                ))
-            
+                event_bus.publish(
+                    Event(
+                        event_type=EventTypes.LLM_REQUEST_FAILED,
+                        source=f"llm_adapter.{self.provider.value}",
+                        data={
+                            "request_id": request_id,
+                            "provider": self.provider.value,
+                            "model": self._model,
+                            "latency_ms": latency_ms,
+                            "error": str(e),
+                            "success": False,
+                        },
+                        correlation_id=metadata.get("correlation_id"),
+                    )
+                )
+
             return LLMResponse(
                 content="",
                 provider=self.provider,
@@ -175,7 +187,7 @@ class AnthropicAdapter(LLMClient):
                     "latency_ms": latency_ms,
                     "request_id": request_id,
                     "timestamp": metadata.get("timestamp"),
-                }
+                },
             )
 
     def validate_config(self, config: Dict[str, Any]) -> bool:
