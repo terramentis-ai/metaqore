@@ -15,8 +15,10 @@ Key Features:
 import logging
 import time
 import asyncio
+import json
+import random
 from typing import Dict, Any, Optional, List
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from enum import Enum
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 import httpx
@@ -101,37 +103,39 @@ class InferenceResult:
 
 
 class HyPIERouter:
-    """HyPIE Router: Governance-aware hybrid-parallel inference engine."""
+    """HyPIE Router: Governance-aware hybrid-parallel inference engine with self-improving capabilities."""
 
-    def __init__(self, psmp_engine: PSMPEngine, hmcp_policy_engine: HierarchicalChainingPolicy, llm_factory: Optional[LLMClientFactory] = None, compliance_auditor: Optional[ComplianceAuditor] = None, cache: Optional[Cache] = None):
+    def __init__(self, psmp_engine: PSMPEngine, hmcp_policy_engine: HierarchicalChainingPolicy, llm_factory: Optional[LLMClientFactory] = None, compliance_auditor: Optional[ComplianceAuditor] = None, cache: Optional[Cache] = None, redis_url: str = "redis://localhost:6379"):
         self.psmp_engine = psmp_engine
         self.hmcp_policy_engine = hmcp_policy_engine
         self.llm_factory = llm_factory or LLMClientFactory()
         self.compliance_auditor = compliance_auditor or ComplianceAuditor()
         self.cache = cache or Cache.create_in_memory_cache()
+        self.redis_url = redis_url
 
         # Provider registry with metrics
         self.providers: Dict[ProviderType, Dict[str, Any]] = {}
         self.provider_metrics: Dict[ProviderType, ProviderMetrics] = {}
 
-        # Circuit breaker state for production hardening
+        # Circuit breaker state for production hardening (now Redis-backed)
         self.circuit_breakers: Dict[ProviderType, Dict[str, Any]] = {}
         self.failure_threshold = 5  # Consecutive failures before opening circuit
         self.recovery_timeout = 60  # Seconds before attempting recovery
 
-        # Initialize circuit breakers for all providers
-        for provider in ProviderType:
-            self.circuit_breakers[provider] = {
-                "state": "closed",  # closed, open, half_open
-                "failure_count": 0,
-                "last_failure_time": 0,
-                "success_count": 0
-            }
+        # Online learning parameters for self-improving routing
+        self.exploration_rate = 0.1  # Epsilon for epsilon-greedy exploration
+        self.learning_rate = 0.1  # Alpha for weight updates
+        self.provider_weights: Dict[ProviderType, float] = {}  # Success-based weights
+        self.provider_success_rates: Dict[ProviderType, float] = {}  # Bayesian success probabilities
 
-        # Initialize with default providers (to be configured)
+        # Initialize distributed state
+        self._initialize_distributed_state()
+
+        # Initialize providers and load persisted state
         self._initialize_providers()
+        self._load_persisted_state()
 
-        logger.info("HyPIE Router initialized with governance, compliance, production hardening, and caching")
+        logger.info("HyPIE Router initialized with governance, compliance, production hardening, distributed state, and self-improving capabilities")
 
     async def _get_cached_routing_decision(self, request: InferenceRequest) -> Optional[ProviderType]:
         """Get cached routing decision for similar requests."""
@@ -169,6 +173,95 @@ class HyPIERouter:
                 cost_per_token=0.0001,
                 last_updated=time.time()
             )
+
+    def _initialize_distributed_state(self):
+        """Initialize Redis-backed distributed state management."""
+        try:
+            import redis
+            self.redis_client = redis.from_url(self.redis_url)
+            self.use_distributed_state = True
+            logger.info("Distributed state management enabled with Redis")
+        except ImportError:
+            logger.warning("Redis not available, falling back to in-memory state")
+            self.redis_client = None
+            self.use_distributed_state = False
+
+    def _load_persisted_state(self):
+        """Load persisted state from Redis."""
+        if not self.use_distributed_state:
+            # Initialize in-memory circuit breakers
+            for provider in ProviderType:
+                self.circuit_breakers[provider] = {
+                    "state": "closed",
+                    "failure_count": 0,
+                    "last_failure_time": 0,
+                    "success_count": 0
+                }
+                self.provider_weights[provider] = 1.0  # Equal initial weights
+                self.provider_success_rates[provider] = 0.5  # Neutral success rate
+            return
+
+        try:
+            # Load circuit breakers
+            for provider in ProviderType:
+                cb_key = f"hypie:circuit_breaker:{provider.value}"
+                cb_data = self.redis_client.get(cb_key)
+                if cb_data:
+                    self.circuit_breakers[provider] = json.loads(cb_data)
+                else:
+                    self.circuit_breakers[provider] = {
+                        "state": "closed",
+                        "failure_count": 0,
+                        "last_failure_time": 0,
+                        "success_count": 0
+                    }
+
+                # Load provider weights and success rates
+                weight_key = f"hypie:weight:{provider.value}"
+                success_key = f"hypie:success_rate:{provider.value}"
+
+                weight_data = self.redis_client.get(weight_key)
+                success_data = self.redis_client.get(success_key)
+
+                self.provider_weights[provider] = float(weight_data) if weight_data else 1.0
+                self.provider_success_rates[provider] = float(success_data) if success_data else 0.5
+
+            logger.info("Loaded persisted state from Redis")
+        except Exception as e:
+            logger.error(f"Failed to load persisted state: {e}")
+            # Fallback to defaults
+            for provider in ProviderType:
+                self.circuit_breakers[provider] = {
+                    "state": "closed",
+                    "failure_count": 0,
+                    "last_failure_time": 0,
+                    "success_count": 0
+                }
+                self.provider_weights[provider] = 1.0
+                self.provider_success_rates[provider] = 0.5
+
+    def _persist_state(self):
+        """Persist current state to Redis."""
+        if not self.use_distributed_state:
+            return
+
+        try:
+            # Persist circuit breakers
+            for provider, cb_state in self.circuit_breakers.items():
+                cb_key = f"hypie:circuit_breaker:{provider.value}"
+                self.redis_client.set(cb_key, json.dumps(cb_state), ex=3600)  # 1 hour TTL
+
+            # Persist learning weights
+            for provider, weight in self.provider_weights.items():
+                weight_key = f"hypie:weight:{provider.value}"
+                self.redis_client.set(weight_key, str(weight), ex=3600)
+
+            for provider, success_rate in self.provider_success_rates.items():
+                success_key = f"hypie:success_rate:{provider.value}"
+                self.redis_client.set(success_key, str(success_rate), ex=3600)
+
+        except Exception as e:
+            logger.error(f"Failed to persist state: {e}")
 
     async def route_inference(self, request: InferenceRequest) -> InferenceResult:
         """Route an inference request to the optimal provider based on governance and metrics."""
@@ -414,28 +507,49 @@ class HyPIERouter:
             if local_providers:
                 candidates = local_providers
 
-        # Score providers based on metrics and policy
+        # Epsilon-greedy exploration: sometimes try non-optimal providers to learn
+        if random.random() < self.exploration_rate and len(candidates) > 1:
+            # Exploration: randomly select from candidates
+            selected_provider = random.choice(candidates)
+            logger.info(f"HyPIE exploration: randomly selected {selected_provider} (epsilon={self.exploration_rate})")
+        else:
+            # Exploitation: select best provider based on learned weights and scores
+            selected_provider = self._select_best_provider_with_learning(candidates, policy, psmp_context)
+
+        if not selected_provider:
+            raise ValueError("No suitable provider found for request")
+
+        logger.info(f"HyPIE selected provider: {selected_provider}")
+        
+        # Cache the routing decision for future similar requests
+        await self._cache_routing_decision(request, selected_provider)
+        
+        return selected_provider
+
+    def _select_best_provider_with_learning(self, candidates: List[ProviderType], policy: RoutingPolicy, psmp_context: Dict[str, Any]) -> Optional[ProviderType]:
+        """Select the best provider using learned weights and scoring."""
         best_provider = None
-        best_score = float('-inf')
+        best_combined_score = float('-inf')
 
         for provider in candidates:
             metrics = self.provider_metrics.get(provider)
             if not metrics:
                 continue
 
-            score = self._calculate_provider_score(provider, metrics, policy, psmp_context)
-            if score > best_score:
-                best_score = score
+            # Calculate base score from metrics and policy
+            base_score = self._calculate_provider_score(provider, metrics, policy, psmp_context)
+            
+            # Incorporate learned success rate and weight
+            success_rate = self.provider_success_rates.get(provider, 0.5)
+            weight = self.provider_weights.get(provider, 1.0)
+            
+            # Combined score: base metrics + learned performance
+            combined_score = base_score + (success_rate * weight * 50)  # Scale learning factor
+            
+            if combined_score > best_combined_score:
+                best_combined_score = combined_score
                 best_provider = provider
 
-        if not best_provider:
-            raise ValueError("No suitable provider found for request")
-
-        logger.info(f"HyPIE selected provider: {best_provider} with score {best_score}")
-        
-        # Cache the routing decision for future similar requests
-        await self._cache_routing_decision(request, best_provider)
-        
         return best_provider
 
     async def _evaluate_specialist_routing(self, request: InferenceRequest, policy: RoutingPolicy) -> Optional[ProviderType]:
@@ -778,48 +892,215 @@ class HyPIERouter:
         
         metrics.last_updated = time.time()
         
+        # Online learning: update provider success rates and weights
+        self._update_provider_learning(provider, success, processing_time_ms)
+        
+        # Persist updated state to Redis
+        self._persist_state()
+        
         logger.debug(f"Updated metrics for {provider}: latency={metrics.latency_ms:.1f}ms, error_rate={metrics.error_rate:.3f}")
 
+    def _update_provider_learning(self, provider: ProviderType, success: bool, latency_ms: float):
+        """Update provider learning parameters using Bayesian success rates and weight adjustments."""
+        # Update success rate using Bayesian updating
+        current_success_rate = self.provider_success_rates.get(provider, 0.5)
+        
+        # Simple Bayesian update: treat as beta distribution
+        # Prior: beta(α, β) where α = successes + 1, β = failures + 1
+        if success:
+            # Increase success rate
+            self.provider_success_rates[provider] = min(0.99, current_success_rate + self.learning_rate * (1.0 - current_success_rate))
+        else:
+            # Decrease success rate
+            self.provider_success_rates[provider] = max(0.01, current_success_rate - self.learning_rate * current_success_rate)
+        
+        # Update provider weights based on performance
+        current_weight = self.provider_weights.get(provider, 1.0)
+        
+        if success:
+            # Reward successful providers, especially fast ones
+            latency_bonus = 1.0 if latency_ms < 500 else 0.5  # Bonus for fast responses
+            weight_increase = self.learning_rate * latency_bonus
+            self.provider_weights[provider] = min(2.0, current_weight + weight_increase)  # Cap at 2.0
+        else:
+            # Penalize failing providers
+            weight_decrease = self.learning_rate * 0.5  # Less aggressive penalty
+            self.provider_weights[provider] = max(0.1, current_weight - weight_decrease)  # Floor at 0.1
+        
+        logger.debug(f"Updated learning for {provider}: success_rate={self.provider_success_rates[provider]:.3f}, weight={self.provider_weights[provider]:.3f}")
+
+    async def update_learning_from_feedback(self, provider: ProviderType, quality_score: float, latency_satisfactory: bool, user_feedback: str = ""):
+        """Update learning parameters based on user feedback about inference outcomes."""
+        # Quality score adjustment (0.0 = poor, 1.0 = excellent)
+        quality_adjustment = (quality_score - 0.5) * self.learning_rate * 2  # Scale adjustment
+        
+        # Latency satisfaction adjustment
+        latency_adjustment = self.learning_rate * 0.5 if latency_satisfactory else -self.learning_rate * 0.3
+        
+        # Combined adjustment
+        total_adjustment = quality_adjustment + latency_adjustment
+        
+        # Update success rate based on quality feedback
+        current_success_rate = self.provider_success_rates.get(provider, 0.5)
+        if quality_score >= 0.7:
+            # High quality feedback increases success rate
+            self.provider_success_rates[provider] = min(0.99, current_success_rate + abs(total_adjustment))
+        elif quality_score <= 0.3:
+            # Low quality feedback decreases success rate
+            self.provider_success_rates[provider] = max(0.01, current_success_rate - abs(total_adjustment))
+        
+        # Update provider weight based on feedback
+        current_weight = self.provider_weights.get(provider, 1.0)
+        self.provider_weights[provider] = max(0.1, min(2.0, current_weight + total_adjustment))
+        
+        # Analyze user feedback for patterns (simple keyword analysis)
+        feedback_lower = user_feedback.lower()
+        if any(word in feedback_lower for word in ["slow", "timeout", "delay"]):
+            # Penalize for latency issues
+            self.provider_weights[provider] = max(0.1, current_weight - self.learning_rate)
+        elif any(word in feedback_lower for word in ["accurate", "good", "excellent", "perfect"]):
+            # Reward for quality
+            self.provider_weights[provider] = min(2.0, current_weight + self.learning_rate)
+        
+        # Persist updated learning state
+        self._persist_state()
+        
+        logger.info(f"Updated learning from feedback for {provider}: quality={quality_score:.2f}, weight={self.provider_weights[provider]:.3f}")
+
     async def _get_recent_performance_data(self) -> Dict[str, Any]:
-        """Get recent performance data for adaptive adjustments."""
-        # Analyze trends across all providers
+        """Get recent performance data for adaptive adjustments from real metrics sources."""
         trends = {}
         
+        # Try to get real metrics from external sources first
+        real_metrics = await self._fetch_external_metrics()
+        
         for provider, metrics in self.provider_metrics.items():
-            if len(metrics.latency_history) >= 10:
-                # Calculate latency trend (percentage change over last 10 vs previous 10)
-                recent = metrics.latency_history[-10:]
-                previous = metrics.latency_history[-20:-10] if len(metrics.latency_history) >= 20 else recent
-                
-                recent_avg = sum(recent) / len(recent)
-                previous_avg = sum(previous) / len(previous)
-                
-                if previous_avg > 0:
-                    latency_trend = (recent_avg - previous_avg) / previous_avg
-                    trends[f"{provider.value}_latency_trend"] = latency_trend
+            provider_key = provider.value
             
-            # Calculate error rate trend
-            if len(metrics.error_history) >= 20:
-                recent_errors = sum(metrics.error_history[-10:])
-                previous_errors = sum(metrics.error_history[-20:-10])
+            # Use real metrics if available, otherwise fall back to historical analysis
+            if provider_key in real_metrics:
+                # Real metrics from Prometheus/Redis
+                real_data = real_metrics[provider_key]
+                trends[f"{provider_key}_latency_trend"] = real_data.get("latency_trend", 0.0)
+                trends[f"{provider_key}_error_trend"] = real_data.get("error_rate_trend", 0.0)
+                trends[f"{provider_key}_throughput_trend"] = real_data.get("throughput_trend", 0.0)
+                trends[f"{provider_key}_cost_trend"] = real_data.get("cost_trend", 0.0)
+            else:
+                # Fallback to historical analysis from internal metrics
+                if len(metrics.latency_history) >= 10:
+                    recent = metrics.latency_history[-10:]
+                    previous = metrics.latency_history[-20:-10] if len(metrics.latency_history) >= 20 else recent
+                    
+                    recent_avg = sum(recent) / len(recent)
+                    previous_avg = sum(previous) / len(previous)
+                    
+                    if previous_avg > 0:
+                        latency_trend = (recent_avg - previous_avg) / previous_avg
+                        trends[f"{provider_key}_latency_trend"] = latency_trend
                 
-                recent_rate = recent_errors / 10
-                previous_rate = previous_errors / 10
-                
-                error_trend = recent_rate - previous_rate
-                trends[f"{provider.value}_error_trend"] = error_trend
+                if len(metrics.error_history) >= 20:
+                    recent_errors = sum(metrics.error_history[-10:])
+                    previous_errors = sum(metrics.error_history[-20:-10])
+                    
+                    recent_rate = recent_errors / 10
+                    previous_rate = previous_errors / 10
+                    
+                    error_trend = recent_rate - previous_rate
+                    trends[f"{provider_key}_error_trend"] = error_trend
         
         # Aggregate trends
         latency_trends = [v for k, v in trends.items() if "latency_trend" in k]
         error_trends = [v for k, v in trends.items() if "error_trend" in k]
+        throughput_trends = [v for k, v in trends.items() if "throughput_trend" in k]
+        cost_trends = [v for k, v in trends.items() if "cost_trend" in k]
         
         return {
             "avg_latency_trend": sum(latency_trends) / len(latency_trends) if latency_trends else 0.0,
             "error_rate_trend": sum(error_trends) / len(error_trends) if error_trends else 0.0,
-            "throughput_trend": 0.0,  # Placeholder
-            "cost_trend": 0.0,        # Placeholder
+            "throughput_trend": sum(throughput_trends) / len(throughput_trends) if throughput_trends else 0.0,
+            "cost_trend": sum(cost_trends) / len(cost_trends) if cost_trends else 0.0,
             "detailed_trends": trends
         }
+
+    async def _fetch_external_metrics(self) -> Dict[str, Dict[str, float]]:
+        """Fetch real-time metrics from external sources (Prometheus, Redis counters, etc.)."""
+        external_metrics = {}
+        
+        try:
+            # Try Prometheus metrics first
+            prometheus_data = await self._fetch_prometheus_metrics()
+            if prometheus_data:
+                external_metrics.update(prometheus_data)
+            
+            # Try Redis counters for additional metrics
+            redis_data = await self._fetch_redis_metrics()
+            if redis_data:
+                # Merge Redis data with Prometheus data
+                for provider, metrics in redis_data.items():
+                    if provider in external_metrics:
+                        external_metrics[provider].update(metrics)
+                    else:
+                        external_metrics[provider] = metrics
+                        
+        except Exception as e:
+            logger.warning(f"Failed to fetch external metrics: {e}")
+        
+        return external_metrics
+
+    async def _fetch_prometheus_metrics(self) -> Dict[str, Dict[str, float]]:
+        """Fetch metrics from Prometheus endpoint."""
+        # Placeholder for Prometheus integration
+        # In a real implementation, this would query Prometheus HTTP API
+        # Example query: rate(http_request_duration_seconds{job="ai-gateway"}[5m])
+        
+        # For now, return empty dict - implement when Prometheus is available
+        return {}
+
+    async def _fetch_redis_metrics(self) -> Dict[str, Dict[str, float]]:
+        """Fetch metrics from Redis counters."""
+        if not self.use_distributed_state:
+            return {}
+            
+        try:
+            metrics = {}
+            for provider in ProviderType:
+                provider_key = provider.value
+                
+                # Fetch recent latency/error counters from Redis
+                latency_key = f"metrics:{provider_key}:latency_sum"
+                error_key = f"metrics:{provider_key}:error_count"
+                request_key = f"metrics:{provider_key}:request_count"
+                
+                latency_sum = float(self.redis_client.get(latency_key) or 0)
+                error_count = float(self.redis_client.get(error_key) or 0)
+                request_count = float(self.redis_client.get(request_key) or 0)
+                
+                if request_count > 0:
+                    avg_latency = latency_sum / request_count
+                    error_rate = error_count / request_count
+                    
+                    # Calculate trends (simplified - compare with previous period)
+                    prev_latency_key = f"metrics:{provider_key}:latency_sum_prev"
+                    prev_error_key = f"metrics:{provider_key}:error_count_prev"
+                    
+                    prev_latency = float(self.redis_client.get(prev_latency_key) or latency_sum)
+                    prev_error = float(self.redis_client.get(prev_error_key) or error_count)
+                    
+                    latency_trend = (avg_latency - (prev_latency / max(request_count, 1))) / max(avg_latency, 1)
+                    error_trend = error_rate - (prev_error / max(request_count, 1))
+                    
+                    metrics[provider_key] = {
+                        "latency_trend": latency_trend,
+                        "error_rate_trend": error_trend,
+                        "throughput_trend": 0.0,  # Not available from basic counters
+                        "cost_trend": 0.0        # Not available from basic counters
+                    }
+            
+            return metrics
+            
+        except Exception as e:
+            logger.error(f"Failed to fetch Redis metrics: {e}")
+            return {}
 
     async def _emit_routing_event(self, request: InferenceRequest, result: InferenceResult, provider: ProviderType):
         """Emit routing decision event for observability."""

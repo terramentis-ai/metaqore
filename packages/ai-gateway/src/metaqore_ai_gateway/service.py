@@ -186,6 +186,39 @@ class AIGatewayService(EventHandler):
             """Health check endpoint."""
             return {"status": "healthy", "service": "ai-gateway"}
 
+        @self.app.post("/api/v1/feedback/outcome")
+        async def submit_outcome_feedback(feedback: Dict[str, Any], req: Request):
+            """Submit outcome feedback to improve routing learning."""
+            try:
+                # Validate feedback data
+                artifact_id = feedback.get("artifact_id")
+                provider = feedback.get("provider")
+                quality_score = feedback.get("quality_score", 0.5)  # 0.0 to 1.0
+                latency_satisfactory = feedback.get("latency_satisfactory", True)
+                user_feedback = feedback.get("user_feedback", "")
+
+                if not artifact_id or not provider:
+                    raise HTTPException(status_code=400, detail="artifact_id and provider are required")
+
+                # Convert provider string to enum
+                try:
+                    provider_enum = ProviderType(provider)
+                except ValueError:
+                    raise HTTPException(status_code=400, detail=f"Invalid provider: {provider}")
+
+                # Update learning with outcome feedback
+                await self.hypie_router.update_learning_from_feedback(
+                    provider_enum, quality_score, latency_satisfactory, user_feedback
+                )
+
+                logger.info(f"Outcome feedback received for artifact {artifact_id}: provider={provider}, quality={quality_score}")
+
+                return {"status": "feedback_received", "artifact_id": artifact_id}
+
+            except Exception as e:
+                logger.error(f"Feedback submission failed: {e}")
+                raise HTTPException(status_code=500, detail=str(e))
+
 
 # Global service instance
 service = AIGatewayService()
