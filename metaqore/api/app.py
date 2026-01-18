@@ -8,6 +8,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
 from metaqore.core.orchestrator import get_orchestrator, OrchestratorResult, AgentConflict
+
 # Import BERTA components lazily to avoid startup issues
 # from metaqore.core.berta_orchestrator import get_berta_orchestrator
 
@@ -65,9 +66,7 @@ async def orchestrate_execution(request: OrchestrationRequest):
         orchestrator.register_agent(request.agent_name, request.capabilities)
 
     result = orchestrator.orchestrate_execution(
-        agent_name=request.agent_name,
-        operation=request.operation,
-        **request.parameters
+        agent_name=request.agent_name, operation=request.operation, **request.parameters
     )
 
     return OrchestrationResponse(
@@ -78,10 +77,10 @@ async def orchestrate_execution(request: OrchestrationRequest):
                 "agent_name": c.agent_name,
                 "conflict_type": c.conflict_type,
                 "description": c.description,
-                "timestamp": c.timestamp.isoformat()
+                "timestamp": c.timestamp.isoformat(),
             }
             for c in result.conflicts
-        ]
+        ],
     )
 
 
@@ -120,6 +119,7 @@ async def get_active_agents():
 async def get_berta_context():
     """Get BERTA global orchestration context summary."""
     from metaqore.core.berta_orchestrator import get_berta_orchestrator
+
     berta = get_berta_orchestrator()
     context = berta.get_global_context_summary()
 
@@ -130,6 +130,7 @@ async def get_berta_context():
 async def get_task_status(task_id: str):
     """Get status of a specific BERTA task."""
     from metaqore.core.berta_orchestrator import get_berta_orchestrator
+
     berta = get_berta_orchestrator()
     status = berta.get_task_status(task_id)
 
@@ -143,6 +144,7 @@ async def get_task_status(task_id: str):
 async def get_all_tasks():
     """Get status of all BERTA tasks."""
     from metaqore.core.berta_orchestrator import get_berta_orchestrator
+
     berta = get_berta_orchestrator()
     tasks = []
 
@@ -165,7 +167,7 @@ async def get_conflict_history():
             "agent_name": c.agent_name,
             "conflict_type": c.conflict_type,
             "description": c.description,
-            "timestamp": c.timestamp.isoformat()
+            "timestamp": c.timestamp.isoformat(),
         }
         for c in conflicts
     ]
@@ -175,6 +177,7 @@ async def get_conflict_history():
 async def health_check():
     """BERTA orchestrator health check."""
     from metaqore.core.berta_orchestrator import get_berta_orchestrator
+
     berta = get_berta_orchestrator()
     context = berta.get_global_context_summary()
 
@@ -185,5 +188,5 @@ async def health_check():
         "global_state_encoded": context["global_state_encoded"],
         "bidirectional_context_active": context["bidirectional_context_active"],
         "total_agents": context["total_agents"],
-        "total_tasks": context["total_tasks"]
+        "total_tasks": context["total_tasks"],
     }

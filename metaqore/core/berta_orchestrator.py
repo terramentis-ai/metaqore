@@ -41,6 +41,7 @@ class AgentCapability(Enum):
 @dataclass
 class TaskContext:
     """Context for a task in the orchestration matrix."""
+
     task_id: str
     agent_name: str
     operation: str
@@ -62,6 +63,7 @@ class TaskContext:
 @dataclass
 class AgentRepresentation:
     """Vectorized representation of an agent in capability space."""
+
     name: str
     capabilities: Set[AgentCapability]
     capability_vector: torch.Tensor
@@ -78,21 +80,25 @@ class BidirectionalEncoder(nn.Module):
         self.hidden_dim = hidden_dim
 
         # Multi-head attention for bidirectional context
-        self.attention_layers = nn.ModuleList([
-            nn.MultiheadAttention(hidden_dim, num_heads, batch_first=True)
-            for _ in range(num_layers)
-        ])
+        self.attention_layers = nn.ModuleList(
+            [
+                nn.MultiheadAttention(hidden_dim, num_heads, batch_first=True)
+                for _ in range(num_layers)
+            ]
+        )
 
         # Feed-forward networks
-        self.ff_layers = nn.ModuleList([
-            nn.Sequential(
-                nn.Linear(hidden_dim, hidden_dim * 4),
-                nn.ReLU(),
-                nn.Linear(hidden_dim * 4, hidden_dim),
-                nn.LayerNorm(hidden_dim)
-            )
-            for _ in range(num_layers)
-        ])
+        self.ff_layers = nn.ModuleList(
+            [
+                nn.Sequential(
+                    nn.Linear(hidden_dim, hidden_dim * 4),
+                    nn.ReLU(),
+                    nn.Linear(hidden_dim * 4, hidden_dim),
+                    nn.LayerNorm(hidden_dim),
+                )
+                for _ in range(num_layers)
+            ]
+        )
 
         # Task relationship encoder (like Next Sentence Prediction)
         self.relationship_encoder = nn.Linear(hidden_dim * 2, 1)
@@ -121,7 +127,9 @@ class SpeculativeExecutor:
         self.confidence_threshold = confidence_threshold
         self.speculative_cache: Dict[str, Any] = {}
 
-    def predict_outcome(self, task_context: TaskContext, global_state: torch.Tensor) -> Tuple[Any, float]:
+    def predict_outcome(
+        self, task_context: TaskContext, global_state: torch.Tensor
+    ) -> Tuple[Any, float]:
         """Predict task outcome based on global context."""
         # Simple prediction based on task type and dependencies
         # In a full implementation, this would use a trained model
@@ -129,8 +137,9 @@ class SpeculativeExecutor:
 
         # Adjust confidence based on dependencies
         if task_context.dependencies:
-            completed_deps = sum(1 for dep in task_context.dependencies
-                               if dep in self.speculative_cache)
+            completed_deps = sum(
+                1 for dep in task_context.dependencies if dep in self.speculative_cache
+            )
             base_confidence += (completed_deps / len(task_context.dependencies)) * 0.2
 
         # Generate speculative result based on operation type
@@ -171,16 +180,22 @@ class DynamicPruner:
     def __init__(self, pruning_threshold: float = 0.1):
         self.pruning_threshold = pruning_threshold
 
-    def prune_inactive_agents(self, agents: Dict[str, AgentRepresentation],
-                            active_tasks: Dict[str, TaskContext]) -> List[str]:
+    def prune_inactive_agents(
+        self, agents: Dict[str, AgentRepresentation], active_tasks: Dict[str, TaskContext]
+    ) -> List[str]:
         """Identify agents that can be pruned due to inactivity."""
         to_prune = []
 
         for agent_name, agent in agents.items():
             # Calculate activity score based on recent tasks and efficiency
-            recent_task_count = len([t for t in agent.active_tasks
-                                   if t in active_tasks and
-                                   (datetime.now() - active_tasks[t].created_at).seconds < 3600])
+            recent_task_count = len(
+                [
+                    t
+                    for t in agent.active_tasks
+                    if t in active_tasks
+                    and (datetime.now() - active_tasks[t].created_at).seconds < 3600
+                ]
+            )
 
             activity_score = (recent_task_count * agent.efficiency_score) / max(len(agents), 1)
 
@@ -205,9 +220,7 @@ class DynamicPruner:
         for operation, task_ids in task_groups.items():
             if len(task_ids) > 1:
                 # Keep the highest priority task, prune others
-                sorted_tasks = sorted(task_ids,
-                                    key=lambda t: tasks[t].priority,
-                                    reverse=True)
+                sorted_tasks = sorted(task_ids, key=lambda t: tasks[t].priority, reverse=True)
                 to_prune.extend(sorted_tasks[1:])
 
         return to_prune
@@ -288,15 +301,16 @@ class BERTAOrchestrator:
             capability_vector=capability_vector,
             efficiency_score=1.0,
             active_tasks=set(),
-            last_active=datetime.now()
+            last_active=datetime.now(),
         )
 
         self.agents[agent_name] = agent
         logger.info(f"Registered BERTA agent: {agent_name} with capabilities: {agent_capabilities}")
         return True
 
-    def create_task(self, agent_name: str, operation: str,
-                   dependencies: List[str] = None, priority: float = 1.0) -> str:
+    def create_task(
+        self, agent_name: str, operation: str, dependencies: List[str] = None, priority: float = 1.0
+    ) -> str:
         """Create a new task in the orchestration matrix."""
         if agent_name not in self.agents:
             raise ValueError(f"Agent {agent_name} not registered")
@@ -315,7 +329,7 @@ class BERTAOrchestrator:
             priority=priority,
             dependencies=set(dependencies or []),
             dependents=set(),
-            vector_embedding=task_embedding
+            vector_embedding=task_embedding,
         )
 
         self.tasks[task_id] = task
@@ -395,21 +409,23 @@ class BERTAOrchestrator:
             "speculative_executions": speculative_tasks,
             "pruned_agents": pruned_agents,
             "pruned_tasks": pruned_tasks,
-            "global_context_encoded": True
+            "global_context_encoded": True,
         }
 
     def _find_or_create_task(self, agent_name: str, operation: str, **kwargs) -> str:
         """Find existing task or create new one."""
         # Look for existing pending task
         for task_id, task in self.tasks.items():
-            if (task.agent_name == agent_name and
-                task.operation == operation and
-                task.status == TaskStatus.PENDING):
+            if (
+                task.agent_name == agent_name
+                and task.operation == operation
+                and task.status == TaskStatus.PENDING
+            ):
                 return task_id
 
         # Create new task
-        dependencies = kwargs.get('dependencies', [])
-        priority = kwargs.get('priority', 1.0)
+        dependencies = kwargs.get("dependencies", [])
+        priority = kwargs.get("priority", 1.0)
         return self.create_task(agent_name, operation, dependencies, priority)
 
     def _update_task_embeddings(self, encoded_state: torch.Tensor):
@@ -432,11 +448,13 @@ class BERTAOrchestrator:
                 if inference_agent:
                     # Perform masked completion
                     predicted_result = self._predict_masked_task(task)
-                    completions.append({
-                        "task_id": task_id,
-                        "predicted_result": predicted_result,
-                        "inference_agent": inference_agent
-                    })
+                    completions.append(
+                        {
+                            "task_id": task_id,
+                            "predicted_result": predicted_result,
+                            "inference_agent": inference_agent,
+                        }
+                    )
 
                     # Update task status
                     task.status = TaskStatus.COMPLETED
@@ -488,11 +506,13 @@ class BERTAOrchestrator:
                     task.speculative_result = predicted_result
                     task.confidence_score = confidence
 
-                    speculations.append({
-                        "task_id": task_id,
-                        "speculative_result": predicted_result,
-                        "confidence": confidence
-                    })
+                    speculations.append(
+                        {
+                            "task_id": task_id,
+                            "speculative_result": predicted_result,
+                            "confidence": confidence,
+                        }
+                    )
 
         return speculations
 
@@ -546,40 +566,25 @@ class BERTAOrchestrator:
 
         # Simulate different operation types
         if operation == "ideation":
-            return {
-                "ideas": ["idea_1", "idea_2", "idea_3"],
-                "berta_orchestrated": True
-            }
+            return {"ideas": ["idea_1", "idea_2", "idea_3"], "berta_orchestrated": True}
         elif operation == "planning":
             return {
                 "tasks": ["task_1", "task_2", "task_3"],
                 "estimated_time": "2 hours",
-                "berta_orchestrated": True
+                "berta_orchestrated": True,
             }
         elif operation == "code_generation":
             return {
                 "code": "def hello_world():\n    print('Hello from BERTA!')",
                 "language": "python",
-                "berta_orchestrated": True
+                "berta_orchestrated": True,
             }
         elif operation == "validation":
-            return {
-                "score": 0.92,
-                "issues": [],
-                "berta_orchestrated": True
-            }
+            return {"score": 0.92, "issues": [], "berta_orchestrated": True}
         elif operation == "security_scan":
-            return {
-                "vulnerabilities": [],
-                "risk_level": "low",
-                "berta_orchestrated": True
-            }
+            return {"vulnerabilities": [], "risk_level": "low", "berta_orchestrated": True}
         else:
-            return {
-                "operation": operation,
-                "result": "completed",
-                "berta_orchestrated": True
-            }
+            return {"operation": operation, "result": "completed", "berta_orchestrated": True}
 
     def _update_agent_efficiency(self, agent_name: str, success: bool):
         """Update agent efficiency score based on task completion."""
@@ -596,9 +601,11 @@ class BERTAOrchestrator:
     def _validate_speculations(self):
         """Validate speculative executions against actual results."""
         for task in self.tasks.values():
-            if (task.status == TaskStatus.COMPLETED and
-                task.speculative_result is not None and
-                task.actual_result is not None):
+            if (
+                task.status == TaskStatus.COMPLETED
+                and task.speculative_result is not None
+                and task.actual_result is not None
+            ):
 
                 is_valid = self.speculative_executor.validate_speculation(
                     task.task_id, task.actual_result
@@ -628,7 +635,7 @@ class BERTAOrchestrator:
             "dependencies": list(task.dependencies),
             "dependents": list(task.dependents),
             "confidence_score": task.confidence_score,
-            "created_at": task.created_at.isoformat()
+            "created_at": task.created_at.isoformat(),
         }
 
     def get_global_context_summary(self) -> Dict[str, Any]:
@@ -636,21 +643,28 @@ class BERTAOrchestrator:
         return {
             "total_agents": len(self.agents),
             "total_tasks": len(self.tasks),
-            "active_tasks": len([t for t in self.tasks.values()
-                               if t.status in [TaskStatus.EXECUTING, TaskStatus.SPECULATIVE]]),
-            "completed_tasks": len([t for t in self.tasks.values()
-                                  if t.status == TaskStatus.COMPLETED]),
-            "masked_tasks": len([t for t in self.tasks.values()
-                               if t.status == TaskStatus.MASKED]),
-            "speculative_tasks": len([t for t in self.tasks.values()
-                                    if t.status == TaskStatus.SPECULATIVE]),
+            "active_tasks": len(
+                [
+                    t
+                    for t in self.tasks.values()
+                    if t.status in [TaskStatus.EXECUTING, TaskStatus.SPECULATIVE]
+                ]
+            ),
+            "completed_tasks": len(
+                [t for t in self.tasks.values() if t.status == TaskStatus.COMPLETED]
+            ),
+            "masked_tasks": len([t for t in self.tasks.values() if t.status == TaskStatus.MASKED]),
+            "speculative_tasks": len(
+                [t for t in self.tasks.values() if t.status == TaskStatus.SPECULATIVE]
+            ),
             "global_state_encoded": True,
-            "bidirectional_context_active": True
+            "bidirectional_context_active": True,
         }
 
 
 # Global BERTA orchestrator instance
 _berta_orchestrator = None
+
 
 def get_berta_orchestrator() -> BERTAOrchestrator:
     """Get the global BERTA orchestrator instance."""

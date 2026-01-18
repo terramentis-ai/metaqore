@@ -30,7 +30,9 @@ class AgentConflict:
 class OrchestratorResult:
     """Result of orchestration operation."""
 
-    def __init__(self, success: bool, data: Any = None, conflicts: Optional[List[AgentConflict]] = None):
+    def __init__(
+        self, success: bool, data: Any = None, conflicts: Optional[List[AgentConflict]] = None
+    ):
         self.success = success
         self.data = data or {}
         self.conflicts = conflicts or []
@@ -90,15 +92,19 @@ class MetaQoreOrchestrator:
         # Check for basic conflicts as fallback
         if operation == "code_generation" and len(self.active_agents) > 1:
             # Check if multiple agents are trying the same operation simultaneously
-            conflicts.append(AgentConflict(
-                agent_name=agent_name,
-                conflict_type="concurrent_operation",
-                description=f"Multiple agents active, BERTA will coordinate {operation}"
-            ))
+            conflicts.append(
+                AgentConflict(
+                    agent_name=agent_name,
+                    conflict_type="concurrent_operation",
+                    description=f"Multiple agents active, BERTA will coordinate {operation}",
+                )
+            )
 
         return conflicts
 
-    def orchestrate_execution(self, agent_name: str, operation: str, **kwargs) -> OrchestratorResult:
+    def orchestrate_execution(
+        self, agent_name: str, operation: str, **kwargs
+    ) -> OrchestratorResult:
         """Orchestrate agent execution using BERTA bidirectional encoding."""
         try:
             # Use BERTA orchestrator for advanced coordination
@@ -117,7 +123,7 @@ class MetaQoreOrchestrator:
                 "agent": agent_name,
                 "operation": operation,
                 "timestamp": datetime.now().isoformat(),
-                "coordinated": True
+                "coordinated": True,
             }
 
             # Add operation-specific coordination
@@ -128,10 +134,7 @@ class MetaQoreOrchestrator:
 
             logger.info(f"BERTA orchestrated execution: {agent_name} -> {operation}")
 
-            return OrchestratorResult(
-                success=berta_result.get("success", True),
-                data=result_data
-            )
+            return OrchestratorResult(success=berta_result.get("success", True), data=result_data)
 
         except Exception as e:
             logger.error(f"BERTA orchestration failed: {e}")
@@ -139,10 +142,7 @@ class MetaQoreOrchestrator:
             conflicts = self.check_conflicts(agent_name, operation)
 
             if conflicts:
-                return OrchestratorResult(
-                    success=False,
-                    conflicts=conflicts
-                )
+                return OrchestratorResult(success=False, conflicts=conflicts)
 
             # Basic result for fallback
             result_data = {
@@ -150,13 +150,10 @@ class MetaQoreOrchestrator:
                 "operation": operation,
                 "timestamp": datetime.now().isoformat(),
                 "coordinated": False,
-                "error": str(e)
+                "error": str(e),
             }
 
-            return OrchestratorResult(
-                success=False,
-                data=result_data
-            )
+            return OrchestratorResult(success=False, data=result_data)
 
     def get_active_agents(self) -> List[str]:
         """Get list of currently active agents from BERTA orchestrator."""
@@ -169,6 +166,7 @@ class MetaQoreOrchestrator:
 
 # Global orchestrator instance
 _orchestrator = None
+
 
 def get_orchestrator() -> MetaQoreOrchestrator:
     """Get the global orchestrator instance."""
