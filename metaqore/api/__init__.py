@@ -1,5 +1,5 @@
-"""MetaQore FastAPI application factory."""
+"""BERTA Meta-Orchestrator FastAPI application."""
 
-from metaqore.api.app import app, create_api_app
+from metaqore.api.app import app
 
-__all__ = ["app", "create_api_app"]
+__all__ = ["app"]

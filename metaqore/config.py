@@ -1,53 +1,21 @@
-"""Configuration utilities for MetaQore."""
+"""Simplified configuration for MetaQore orchestrator."""
 
-from __future__ import annotations
-
-from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Optional
 
-import yaml
-from pydantic import Field, ValidationInfo, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
-
-
-class GovernanceMode(str, Enum):
-    """Supported governance modes for MetaQore deployments."""
-
-    STRICT = "strict"
-    ADAPTIVE = "adaptive"
-    PLAYGROUND = "playground"
+from pydantic_settings import BaseSettings
 
 
 class MetaQoreConfig(BaseSettings):
-    """Global service configuration loaded from env vars or optional YAML file."""
+    """Simple configuration for MetaQore orchestrator."""
 
-    model_config = SettingsConfigDict(env_prefix="METAQORE_", case_sensitive=False)
+    host: str = "0.0.0.0"
+    port: int = 8001
+    debug: bool = False
+    max_agents: int = 20
 
-    governance_mode: GovernanceMode = GovernanceMode.STRICT
-    organization: str = Field(
-        default="default",
-        description="Organization or tenant identifier used for compliance logging.",
-    )
-    max_graph_depth: int = Field(default=3, ge=1, le=10)
-    max_parallel_branches: int = Field(default=5, ge=1, le=20)
-    max_conversation_turns: int = Field(default=10, ge=1, le=100)
-    max_conversation_participants: int = Field(default=6, ge=1, le=32)
-    storage_backend: str = Field(default="sqlite", description="sqlite | postgres | redis")
-    storage_dsn: str = Field(default="sqlite:///metaqore.db")
-    secure_gateway_policy: str = Field(
-        default="default_local_first",
-        description="Routing policy for SecureGateway (default|enterprise|compliance)",
-    )
-    api_key: Optional[str] = Field(
-        default=None,
-        description="Static API key for bearer/X-API-Key auth. When set, all /api/v1 requests require it.",
-    )
-    api_key_header: str = Field(
-        default="Authorization",
-        description="Header to inspect for API key bearer token.",
-    )
-    jwt_secret_key: Optional[str] = Field(
+    class Config:
+        env_prefix = "METAQORE_"
         default=None,
         description="Secret key for JWT token verification. Enables JWT auth when set.",
     )

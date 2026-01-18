@@ -1,24 +1,18 @@
-# MetaQore API container image
+# Simplified MetaQore Orchestrator container image
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# Install system dependencies for compilation
-RUN apt-get update && apt-get install -y \
-    gcc \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
-# Copy and install requirements
-COPY requirements.txt requirements-dev.txt ./
+# Copy and install simplified requirements
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy source code
 COPY metaqore/ ./metaqore/
-COPY config/ ./config/
+COPY main.py ./
 
 # Create non-root user
 RUN useradd --create-home --shell /bin/bash metaqore && \
@@ -27,7 +21,7 @@ USER metaqore
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8001/api/v1/health || exit 1
+    CMD python -c "import requests; requests.get('http://localhost:8001/health')" || exit 1
 
 EXPOSE 8001
-CMD ["uvicorn", "metaqore.api.app:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["python", "main.py"]
